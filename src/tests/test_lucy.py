@@ -1,2 +1,2 @@
 def test_hello():
-    pass
+    assert False
