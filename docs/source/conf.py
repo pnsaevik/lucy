@@ -61,20 +61,14 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.doctest',
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
-    'autoapi.extension',
 ]
 
 nitpicky = True
 html_css_files = [
     'css/custom.css',
 ]
-
-# Matplotlib extension options
-plot_html_show_source_link = False
-plot_formats = ['png']
-plot_html_show_formats = False
-plot_pre_code = ""
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -100,19 +94,7 @@ html_static_path = ['_static']
 
 # -- Options for Sphinx AutoAPI -----------------------------------------------
 
-autoapi_dirs = ['../../src']
-# autoapi_add_toctree_entry = True
-autoapi_member_order = 'alphabetical'
-autoapi_template_dir = '_templates/autoapi'
-autoapi_options = [
-    'members',
-    'special-members',
-    'show-inheritance',
-    'show-module-summary',
-    'imported-members',
-]
-autodoc_typehints = 'description'
-
+autosummary_generate = True
 
 # -- Options for intersphinx ------------------------
 
