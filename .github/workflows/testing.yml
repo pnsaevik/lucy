@@ -11,6 +11,9 @@ jobs:
         uses: actions/checkout@v3
       - name: Installation
         run: pip install .[dev]
+      - name: Barentswatch auth
+        run: >
+          python -c "import lucy.barentswatch; lucy.barentswatch.create_token('paal.naeverlid.saevik@hi.no:testing', '7YUpnSWaiz9fru8ZzTyS')"
       - name: Run tests
         run: pytest
       - name: Run sphinx html build
