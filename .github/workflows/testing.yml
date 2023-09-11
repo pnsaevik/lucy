@@ -5,16 +5,14 @@ jobs:
     runs-on: ubuntu-latest
     name: Run tests
     steps:
-      - name: Barentswatch auth
-        run: 'curl -X POST --header "Content-Type: application/x-www-form-urlencoded" -d "client_id=paal.naeverlid.saevik%40hi.no%3Atesting&scope=api&client_secret=7YUpnSWaiz9fru8ZzTyS&grant_type=client_credentials" https://id.barentswatch.no/connect/token'
       - name: Checkout
         uses: actions/checkout@v3
       - name: Installation
         run: pip install .[dev]
-      - name: Barentswatch auth
-        run: >
-          python -c "import lucy.barentswatch; lucy.barentswatch.create_token('paal.naeverlid.saevik@hi.no:testing', '7YUpnSWaiz9fru8ZzTyS')"
       - name: Run tests
+        env:
+          BARENTSWATCH_CLIENT_ID: ${{ secrets.BARENTSWATCH_CLIENT_ID }}
+          BARENTSWATCH_CLIENT_SECRET: ${{ secrets.BARENTSWATCH_CLIENT_SECRET }}
         run: pytest
       - name: Run sphinx html build
         run: sphinx-build -v -b html -W --keep-going -n ./docs/source/ ./docs/build/
