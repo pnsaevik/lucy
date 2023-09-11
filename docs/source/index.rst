@@ -9,8 +9,6 @@ What is lucy?
 ``lucy`` is a software package supporting salmon lice research at the Institute
 of Marine Research (IMR), Norway.
 
-This link is 404: `<https://github.com/pnsaevik/lucy/not_available>`_
-
 
 Installation
 ============
