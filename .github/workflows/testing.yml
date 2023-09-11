@@ -5,6 +5,8 @@ jobs:
     runs-on: ubuntu-latest
     name: Run tests
     steps:
+      - name: Barentswatch auth
+        run: 'curl -X POST --header "Content-Type: application/x-www-form-urlencoded" -d "client_id=paal.naeverlid.saevik%40hi.no%3Atesting&scope=api&client_secret=7YUpnSWaiz9fru8ZzTyS&grant_type=client_credentials" https://id.barentswatch.no/connect/token'
       - name: Checkout
         uses: actions/checkout@v3
       - name: Installation
