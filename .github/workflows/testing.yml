@@ -8,4 +8,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Installation
-        run: pip install .
+        run: pip install .[dev]
+      - name: Run tests
+        run: pytest
