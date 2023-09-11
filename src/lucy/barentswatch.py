@@ -1,3 +1,7 @@
+"""
+Functions for interacting with the Barentswatch database
+"""
+
 import requests
 import os
 import pandas as pd
@@ -45,7 +49,27 @@ def site_names():
     return pd.DataFrame(response_list)
 
 
-def lice_count(year):
+def lice_count(year: int) -> pd.DataFrame:
+    """
+    Returns the reported lice counts for each farm, week by week.
+
+    There are several columns in the returned table, including:
+
+    "År": year
+    "Uke": week
+    "Lokalitetsnavn": site name
+    "Lokalitetsnummer": site ID number
+    "Lat": latitude of site
+    "Lon": longitude of site
+    "Fastsittende lus": attached lice per fish
+    "Lus i bevegelige stadier": mobile lice per fish
+    "Voksne hunnlus": adult female lice per fish
+    "Sjøtemperatur": ocean temperature
+
+    :param year: The report year
+    :return: A table of all reported lice counts
+    """
+
     token = os.environ['BARENTSWATCH_ACCESS_TOKEN']
 
     response = requests.request(
