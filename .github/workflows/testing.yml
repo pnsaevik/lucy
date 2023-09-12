@@ -10,6 +10,9 @@ jobs:
       - name: Installation
         run: pip install .[dev]
       - name: Run tests
+        env:
+          BARENTSWATCH_CLIENT_ID: ${{ secrets.BARENTSWATCH_CLIENT_ID }}
+          BARENTSWATCH_CLIENT_SECRET: ${{ secrets.BARENTSWATCH_CLIENT_SECRET }}
         run: pytest
       - name: Run sphinx html build
         run: sphinx-build -v -b html -W --keep-going -n ./docs/source/ ./docs/build/
