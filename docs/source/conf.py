@@ -93,7 +93,7 @@ html_theme = 'alabaster'
 html_static_path = ['_static']
 
 
-# -- Options for Sphinx AutoAPI -----------------------------------------------
+# -- Options for Sphinx autosummary -----------------------------------------------
 
 autosummary_generate = True
 
