@@ -8,10 +8,18 @@ import pandas as pd
 import io
 
 
-def create_token(client_id, client_secret):
-    # Return token immediately if it exists
-    if 'BARENTSWATCH_ACCESS_TOKEN' in os.environ:
-        return os.environ['BARENTSWATCH_ACCESS_TOKEN']
+def create_token(client_id: str, client_secret: str):
+    """
+    Create temporary token used for interacting with the online database.
+
+    The function puts the token into the environment variable
+    ``BARENTSWATCH_ACCESS_TOKEN`` for later use. It also returns the token
+    as a string.
+
+    :param client_id: Username
+    :param client_secret: Password
+    :return: The access token
+    """
 
     print(os.getenv('BARENTSWATCH_CLIENT_ID'))
     print(os.getenv('BARENTSWATCH_CLIENT_SECRET'))
@@ -37,7 +45,13 @@ def create_token(client_id, client_secret):
     return response_dict["access_token"]
 
 
-def site_names():
+def site_names() -> pd.DataFrame:
+    """
+    Returns current fish farm location names
+
+    :return: A table of fish farm location names
+    """
+
     token = os.environ['BARENTSWATCH_ACCESS_TOKEN']
 
     response = requests.request(
@@ -60,16 +74,14 @@ def lice_count(year: int) -> pd.DataFrame:
 
     There are several columns in the returned table, including:
 
-    "År": year
-    "Uke": week
-    "Lokalitetsnavn": site name
-    "Lokalitetsnummer": site ID number
-    "Lat": latitude of site
-    "Lon": longitude of site
-    "Fastsittende lus": attached lice per fish
-    "Lus i bevegelige stadier": mobile lice per fish
-    "Voksne hunnlus": adult female lice per fish
-    "Sjøtemperatur": ocean temperature
+    "År" (year), "Uke" (week), "Lokalitetsnavn" (site name),
+    "Lokalitetsnummer" (site ID number),
+    "Lat" (latitude of site),
+    "Lon" (longitude of site),
+    "Fastsittende lus" (attached lice per fish),
+    "Lus i bevegelige stadier" (mobile lice per fish),
+    "Voksne hunnlus" (adult female lice per fish),
+    "Sjøtemperatur" (ocean temperature).
 
     :param year: The report year
     :return: A table of all reported lice counts

@@ -49,6 +49,7 @@ def getversion():
     return lucy.__version__
 
 
+version = getversion()
 release = getversion()
 
 
