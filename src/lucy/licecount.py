@@ -22,13 +22,14 @@ def fill_missing_lice(df: pd.DataFrame) -> pd.DataFrame:
     "Lus i bevegelige stadier", "Voksne hunnlus", "Lokalitetsnummer", "Uke", "År".
 
     The output dataframe has the same columns as the input dataframe, in addition
-    to an extra column "Interpolert" which indicates whether the lice counts are
-    interpolated.
+    to an extra column "Rådata mangler" which indicates whether the adult female lice counts
+    were missing from the raw data.
 
     :param df: Input dataframe
     :return: New dataframe
     """
 
+    adf_col = "Voksne hunnlus"
     col_order = list(df.columns)
 
     # Find date range
@@ -49,18 +50,44 @@ def fill_missing_lice(df: pd.DataFrame) -> pd.DataFrame:
     df = df.reindex(new_index)
 
     # Add column indicating that lice values are interpolated
-    df["Interpolert"] = np.isnan(df["Voksne hunnlus"].values)
+    df["Rådata mangler"] = np.isnan(df[adf_col].values)
 
     # Fill inn missing data
     chunks = []
-    interp_col = "Voksne hunnlus"
     for loknr, group in df.groupby("Lokalitetsnummer"):
+        # Interpolate adult female lice values
         chunk = group.copy()
-        chunk["Voksne hunnlus"] = group["Voksne hunnlus"].interpolate(limit=2)
+        chunk[adf_col] = group[adf_col].interpolate()
+
+        # Remove interpolation if three or more consecutive missing values
+        missing = group["Rådata mangler"].values
+        remove_interpolated = missing & (consecutive(missing) >= 3)
+        chunk.loc[remove_interpolated, adf_col] = np.nan
+
         chunks.append(chunk)
 
     df = pd.concat(chunks)
-    return df.reset_index().loc[:, col_order + ['Interpolert']]
+    return df.reset_index().loc[:, col_order + ["Rådata mangler"]]
+
+
+def consecutive(v):
+    """
+    Count the number of consecutive equal elements in the input array
+
+    Example: consecutive([5, 5, 5, 1, 1, 3, 3, 1, 1, 1, 1]) returns
+    [3, 3, 3, 2, 2, 2, 2, 4, 4, 4, 4]
+
+    :param v: Input array of bools
+    :return: An array of counts, of the same size as the input array
+    """
+    v = np.asarray(v)
+    if len(v) == 0:
+        return np.zeros((0, ), dtype=np.int64)
+
+    breaks = v[:-1] != v[1:]
+    group_num = np.concatenate([[0], np.cumsum(breaks)])
+    _, unq_cnt = np.unique(group_num, return_counts=True)
+    return np.repeat(unq_cnt, unq_cnt)
 
 
 def cleanup_temp():
