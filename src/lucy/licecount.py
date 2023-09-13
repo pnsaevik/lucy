@@ -44,14 +44,19 @@ def fill_missing_lice(df: pd.DataFrame) -> pd.DataFrame:
     df = df.set_index(["Lokalitetsnummer", "År", "Uke"])
     df = df.reindex(new_index)
 
+    # Add column indicating that lice values are interpolated
+    df["Interpolert"] = np.isnan(df["Voksne hunnlus"].values)
+
     # Fill inn missing data
     chunks = []
+    interp_col = "Voksne hunnlus"
     for loknr, group in df.groupby("Lokalitetsnummer"):
-        chunk = group.interpolate(limit=2)
+        chunk = group.copy()
+        chunk["Voksne hunnlus"] = group["Voksne hunnlus"].interpolate(limit=2)
         chunks.append(chunk)
 
     df = pd.concat(chunks)
-    return df.reset_index().loc[:, col_order]
+    return df.reset_index().loc[:, col_order + ['Interpolert']]
 
 
 def cleanup_temp():
