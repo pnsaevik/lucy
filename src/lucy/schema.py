@@ -8,7 +8,7 @@ import pandas as pd
 
 class Lice(pd.DataFrame):
     """
-    A table of lice count data
+    A table of lice count data, with standardized column names.
 
     .. list-table::
         :header-rows: 1

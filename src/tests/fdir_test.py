@@ -1,7 +1,7 @@
 import pytest
 import requests
 
-from lucy import fdir
+from lucy import fiskeridir
 import numpy as np
 import responses
 import json
@@ -40,16 +40,16 @@ FISKDIR_TEST_DATA = """
 
 class Test_date2str:
     def test_converts_stringdate_to_correct_format(self):
-        assert fdir.date2str('2020-01-01') == '2020-01-01T00:00:00Z'
+        assert fiskeridir.date2str('2020-01-01') == '2020-01-01T00:00:00Z'
 
     def test_converts_numpydate_to_correct_format(self):
         dt = np.datetime64('2020-01-01T12')
-        assert fdir.date2str(dt) == '2020-01-01T12:00:00Z'
+        assert fiskeridir.date2str(dt) == '2020-01-01T12:00:00Z'
 
 
 class Test_get_url:
     def test_returns_valid_url(self):
-        url = fdir.get_url(start_date='2020-01-01', stop_date='2021-01-01')
+        url = fiskeridir.get_url(start_date='2020-01-01', stop_date='2021-01-01')
         assert url.startswith('https://')
 
 
@@ -57,7 +57,7 @@ class Test_repeated_request:
     @responses.activate
     def test_returns_response_if_success(self):
         responses.add(method=responses.GET, url='https://test.url/', body='Payload')
-        response = fdir.repeated_request(url='https://test.url/', user='', passwd='')
+        response = fiskeridir.repeated_request(url='https://test.url/', user='', passwd='')
         assert response.text == 'Payload'
 
     @responses.activate
@@ -75,7 +75,7 @@ class Test_repeated_request:
         )
 
         with pytest.raises(requests.HTTPError):
-            fdir.repeated_request(
+            fiskeridir.repeated_request(
                 url='https://test.url/', user='', passwd='', attempts=2, retry_time=0)
 
         assert num_attempts[0] == 2
@@ -88,7 +88,7 @@ class Test_paginated_request:
         responses.add(responses.GET, 'https://test.url/q?r%26page=1', '{"last": false}')
         responses.add(responses.GET, 'https://test.url/q?r%26page=2', '{"last": true}')
 
-        p = fdir.paginated_request(url='https://test.url/q?r', user='', passwd='')
+        p = fiskeridir.paginated_request(url='https://test.url/q?r', user='', passwd='')
         assert len(p) == 3
 
 
@@ -96,7 +96,7 @@ class Test_pages2dataframes:
     def test_returns_dataframe(self):
         p = json.loads(FISKDIR_TEST_DATA)
         pages = [p]
-        df = fdir.pages2dataframes(pages)
+        df = fiskeridir.pages2dataframes(pages)
         assert 'numFish' in df.columns
 
 
@@ -108,7 +108,7 @@ class Test_biomass:
             'https://fiskeridirektoratet-bio-api.hi.no/apis/nmdapi/fiskeridirektoratet-bio-api/v1/report?url=https://api.fiskeridir.no/bio-api/api/v1/reports?size=100%26start-time=2023-01-01T00:00:00Z%26end-time=2024-01-01T00:00:00Z%26page=0',
             body=FISKDIR_TEST_DATA,
         )
-        df = fdir.biomass(2023, "nmd", "")
+        df = fiskeridir.biomass(2023, "nmd", "")
         assert list(df.columns) == [
             'referenceId', 'reportReceipt', 'organization', 'reportTime', 'startTime',
             'endTime', 'siteNr', 'siteName', 'sourceSystem', 'productionUnitForeignId',
