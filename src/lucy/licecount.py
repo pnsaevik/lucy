@@ -15,7 +15,7 @@ def fill_missing_lice(df: pd.DataFrame) -> pd.DataFrame:
     This function reindexes the input dataframe so that there is one entry for
     each week and farm. Missing combinations of farms and weeks are added as new rows.
     Missing adult female lice counts are interpolated from existing ones, as long
-    as the gaps are only 1 or 2 consecutive weeks. Otherwise, missing lice
+    as the gaps less than 4 consecutive weeks. Otherwise, missing lice
     counts are assumed to be zero.
 
     It is assumed that the input dataframe has columns named "Fastsittende lus",
@@ -60,8 +60,8 @@ def fill_missing_lice(df: pd.DataFrame) -> pd.DataFrame:
 
         # Remove interpolation if three or more consecutive missing values
         missing = group["Rådata mangler"].values
-        remove_interpolated = missing & (consecutive(missing) >= 3)
-        chunk.loc[remove_interpolated, adf_col] = np.nan
+        remove_interpolated = missing & (consecutive(missing) >= 4)
+        chunk.loc[remove_interpolated, adf_col] = 0
 
         chunks.append(chunk)
 

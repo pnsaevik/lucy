@@ -30,11 +30,9 @@ class Test_cleanup_lice:
         assert df.loc[1, "Voksne hunnlus"] == 2
 
     def test_does_not_interpolate_big_gaps(self, lice_df):
-        lice_df.loc[2, "Uke"] = 10
+        lice_df.loc[2, "Uke"] = 11
         df = licecount.fill_missing_lice(lice_df)
-        assert df["Voksne hunnlus"][:6].fillna(-1).values.tolist() == [
-            1, 2, -1, -1, -1, 3,
-        ]
+        assert df["Voksne hunnlus"][:7].values.tolist() == [1, 2, 0, 0, 0, 0, 3]
 
     def test_indicates_if_value_is_interpolated(self, lice_df):
         lice_df.loc[1, "Voksne hunnlus"] = float('nan')
