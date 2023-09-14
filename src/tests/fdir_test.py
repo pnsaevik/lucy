@@ -171,7 +171,7 @@ class Test_biomass:
         ]
 
 
-class Test_farm_locations:
+class Test_active_farms:
     @responses.activate
     def test_returns_dataset(self):
         responses.add(
@@ -180,11 +180,11 @@ class Test_farm_locations:
             body=CSV_TEST_DATA,
         )
 
-        df = fiskeridir.farm_locations()
-        assert list(df.columns) == ['siteNr', 'name', 'longitude', 'latitude']
+        df = fiskeridir.active_farms()
+        assert list(df.columns) == ['farmid', 'name', 'lon', 'lat']
 
 
-class Test_deleted_locations:
+class Test_deleted_farms:
     @responses.activate
     def test_returns_dataset(self):
         responses.add(
@@ -193,5 +193,23 @@ class Test_deleted_locations:
             body=WFS_TEST_DATA,
         )
 
-        df = fiskeridir.deleted_locations()
-        assert list(df.columns) == ['siteNr', 'name', 'longitude', 'latitude']
+        df = fiskeridir.deleted_farms()
+        assert list(df.columns) == ['farmid', 'name', 'lon', 'lat']
+
+
+class Test_farms:
+    @responses.activate
+    def test_returns_dataset(self):
+        responses.add(
+            responses.GET,
+            'https://gis.fiskeridir.no/server/services/FiskeridirWFS/MapServer/WFSServer',
+            body=WFS_TEST_DATA,
+        )
+        responses.add(
+            responses.GET,
+            'https://api.fiskeridir.no/pub-aqua/api/v1/dump/new-legacy-csv',
+            body=CSV_TEST_DATA,
+        )
+
+        df = fiskeridir.farms()
+        assert list(df.columns) == ['farmid', 'name', 'lon', 'lat', 'deleted']

@@ -19,7 +19,7 @@ class Lice(pd.DataFrame):
         *   - id
             - int
             - Index column
-        *   - loknr
+        *   - farmid
             - int
             - Fish farm identifier
         *   - date
@@ -42,6 +42,36 @@ class Lice(pd.DataFrame):
         *   - missing
             - bool
             - True if lice data were missing from original dataset
+    """
+    def __init__(self):
+        super().__init__()
+
+
+class Farms(pd.DataFrame):
+    """
+    A table of fish farm data, with standardized column names.
+
+    .. list-table::
+        :header-rows: 1
+
+        *   - Column
+            - Type
+            - Description
+        *   - farmid
+            - int
+            - Index column
+        *   - name
+            - str
+            - Fish farm name
+        *   - lat
+            - float
+            - Latitude of farm
+        *   - lon
+            - float
+            - Longitude of farm
+        *   - deleted
+            - bool
+            - True if the farm is deleted
     """
     def __init__(self):
         super().__init__()

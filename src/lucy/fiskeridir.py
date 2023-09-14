@@ -8,6 +8,7 @@ import pandas as pd
 import time
 import re
 import io
+from . import schema
 
 
 def date2str(dt) -> str:
@@ -147,7 +148,12 @@ def biomass(year: int, user: str, passwd: str):
     return table
 
 
-def farm_locations():
+def active_farms() -> schema.Farms:
+    """
+    Download data on active fish farms
+
+    :return: A table with fish farm data
+    """
     url = 'https://api.fiskeridir.no/pub-aqua/api/v1/dump/new-legacy-csv'
     r = requests.get(url, timeout=10)
     r.raise_for_status()
@@ -160,18 +166,23 @@ def farm_locations():
         usecols=['LOK_NR', 'LOK_NAVN', 'N_GEOWGS84', 'Ø_GEOWGS84']
     )
     df = df.rename(columns=dict(
-        LOK_NR='siteNr',
+        LOK_NR='farmid',
         LOK_NAVN='name',
-        N_GEOWGS84='latitude',
-        Ø_GEOWGS84='longitude',
+        N_GEOWGS84='lat',
+        Ø_GEOWGS84='lon',
     ))
 
-    df = df.groupby('siteNr').first().reset_index()
-    df = df[['siteNr', 'name', 'longitude', 'latitude']]
+    df = df.groupby('farmid').first().reset_index()
+    df = df[['farmid', 'name', 'lon', 'lat']]
     return df
 
 
-def deleted_locations():
+def deleted_farms() -> schema.Farms:
+    """
+    Download data on deleted fish farms
+
+    :return: A table with fish farm data
+    """
     url = 'https://gis.fiskeridir.no/server/services/FiskeridirWFS/MapServer/WFSServer'
     args = dict(
         service='WFS',
@@ -193,7 +204,22 @@ def deleted_locations():
     )
     data = pattern.findall(txt)
 
-    # Encapsulate as xarray.Dataset
-    df = pd.DataFrame(data, columns=['siteNr', 'name', 'latitude', 'longitude'])
-    df = df[['siteNr', 'name', 'longitude', 'latitude']]
+    # Encapsulate as pandas.DataFrame
+    df = pd.DataFrame(data, columns=['farmid', 'name', 'lat', 'lon'])
+    df = df[['farmid', 'name', 'lon', 'lat']]
     return df
+
+
+def farms() -> schema.Farms:
+    """
+    Download data on active and deleted fish farms
+
+    :return: A table with fish farm data
+    """
+    df_a = active_farms()
+    df_b = deleted_farms()
+
+    df_a['deleted'] = False
+    df_b['deleted'] = True
+
+    return pd.concat([df_a, df_b])
