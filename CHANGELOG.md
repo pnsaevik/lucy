@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Column indicating whether lice data has been interpolated
 
+### Changed
+- Lice data are no longer extrapolated in time
+
 ### Fixed
 - Three or more consecutive gaps in lice data are not filled
 

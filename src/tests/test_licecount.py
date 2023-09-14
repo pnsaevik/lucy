@@ -17,11 +17,7 @@ class Test_cleanup_lice:
 
     def test_returns_verbatim_if_complete(self, lice_df):
         df = licecount.fill_missing_lice(lice_df)
-        assert df.query('Uke <=7').iloc[:, :6].to_dict('list') == lice_df.to_dict('list')
-
-    def test_adds_two_weeks(self, lice_df):
-        df = licecount.fill_missing_lice(lice_df)
-        assert df.iloc[-2:]["Uke"].values.tolist() == [8, 9]
+        assert df.iloc[:, :6].to_dict('list') == lice_df.to_dict('list')
 
     def test_interpolates_missing_licecount(self, lice_df):
         lice_df.loc[1, "Voksne hunnlus"] = float('nan')
@@ -43,7 +39,7 @@ class Test_cleanup_lice:
     def test_indicates_if_value_is_interpolated(self, lice_df):
         lice_df.loc[1, "Voksne hunnlus"] = float('nan')
         df = licecount.fill_missing_lice(lice_df)
-        assert df["Rådata mangler"].values.tolist() == [0, 1, 0, 1, 1, 0, 0, 0, 1, 1]
+        assert df.loc[[0, 1, 2], "Rådata mangler"].values.tolist() == [0, 1, 0]
 
 
 class Test_consecutive:

@@ -16,7 +16,7 @@ def fill_missing_lice(df: pd.DataFrame) -> pd.DataFrame:
     each week and farm. Missing combinations of farms and weeks are added as new rows.
     Missing adult female lice counts are interpolated from existing ones, as long
     as the gaps are only 1 or 2 consecutive weeks. Otherwise, missing lice
-    counts are assumed to be zero. Also, the data are extrapolated by two weeks.
+    counts are assumed to be zero.
 
     It is assumed that the input dataframe has columns named "Fastsittende lus",
     "Lus i bevegelige stadier", "Voksne hunnlus", "Lokalitetsnummer", "Uke", "År".
@@ -36,7 +36,6 @@ def fill_missing_lice(df: pd.DataFrame) -> pd.DataFrame:
     yw_min, yw_max = df[["År", "Uke"]].sort_values(["År", "Uke"]).iloc[[0, -1], :].values
     date_min = datetime.datetime.strptime(f'{yw_min[0]}-{yw_min[1]}-1', '%G-%V-%u')
     date_max = datetime.datetime.strptime(f'{yw_max[0]}-{yw_max[1]}-1', '%G-%V-%u')
-    date_max = date_max + datetime.timedelta(days=14)  # Extrapolate two weeks
     date_range = pd.date_range(date_min, date_max, freq='7D')
 
     # Create new index
