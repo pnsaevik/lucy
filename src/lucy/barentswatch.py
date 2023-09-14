@@ -6,6 +6,8 @@ import requests
 import os
 import pandas as pd
 import io
+from . import schema
+import datetime
 
 
 def create_token(client_id: str, client_secret: str):
@@ -45,43 +47,9 @@ def create_token(client_id: str, client_secret: str):
     return response_dict["access_token"]
 
 
-def site_names() -> pd.DataFrame:
-    """
-    Returns current fish farm location names
-
-    :return: A table of fish farm location names
-    """
-
-    token = os.environ['BARENTSWATCH_ACCESS_TOKEN']
-
-    response = requests.request(
-        method="GET",
-        url="https://www.barentswatch.no/bwapi/v1/geodata/fishhealth/localities",
-        headers={
-            "authorization": f"bearer {token}",
-            "content-type": "application/x-www-form-urlencoded",
-            "user-agent": "IMR Lucy",
-        }
-    )
-    response.raise_for_status()
-    response_list = response.json()
-    return pd.DataFrame(response_list)
-
-
-def lice_count(year: int) -> pd.DataFrame:
+def lice(year: int) -> schema.Lice:
     """
     Returns the reported lice counts for each farm, week by week.
-
-    There are several columns in the returned table, including:
-
-    "År" (year), "Uke" (week), "Lokalitetsnavn" (site name),
-    "Lokalitetsnummer" (site ID number),
-    "Lat" (latitude of site),
-    "Lon" (longitude of site),
-    "Fastsittende lus" (attached lice per fish),
-    "Lus i bevegelige stadier" (mobile lice per fish),
-    "Voksne hunnlus" (adult female lice per fish),
-    "Sjøtemperatur" (ocean temperature).
 
     :param year: The report year
     :return: A table of all reported lice counts
@@ -111,4 +79,14 @@ def lice_count(year: int) -> pd.DataFrame:
     csv_text = response.content.decode('utf-8')
     # noinspection PyTypeChecker
     df = pd.read_csv(io.StringIO(csv_text))
+    df = df.rename(columns={
+        'Fastsittende lus': 'nch',
+        'Lus i bevegelige stadier': 'npa',
+        'Voksne hunnlus': 'naf',
+        'Sjøtemperatur': 'temp',
+        'Lokalitetsnummer': 'farmid',
+    })
+    df.index.name = 'id'
+    datestr = [f'{yr}-{wk}-1' for yr, wk in zip(df['År'], df['Uke'])]
+    df['date'] = [datetime.datetime.strptime(s, "%G-%V-%u") for s in datestr]
     return df
