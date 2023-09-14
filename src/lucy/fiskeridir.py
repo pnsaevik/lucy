@@ -6,6 +6,8 @@ import numpy as np
 import requests
 import pandas as pd
 import time
+import re
+import io
 
 
 def date2str(dt) -> str:
@@ -143,3 +145,55 @@ def biomass(year: int, user: str, passwd: str):
     pages = paginated_request(url=get_url(start, stop), user=user, passwd=passwd)
     table = pages2dataframes(pages)
     return table
+
+
+def farm_locations():
+    url = 'https://api.fiskeridir.no/pub-aqua/api/v1/dump/new-legacy-csv'
+    r = requests.get(url, timeout=10)
+    r.raise_for_status()
+
+    # noinspection PyTypeChecker
+    df = pd.read_csv(
+        filepath_or_buffer=io.StringIO(r.text),
+        sep=';',
+        header=1,
+        usecols=['LOK_NR', 'LOK_NAVN', 'N_GEOWGS84', 'Ø_GEOWGS84']
+    )
+    df = df.rename(columns=dict(
+        LOK_NR='siteNr',
+        LOK_NAVN='name',
+        N_GEOWGS84='latitude',
+        Ø_GEOWGS84='longitude',
+    ))
+
+    df = df.groupby('siteNr').first().reset_index()
+    df = df[['siteNr', 'name', 'longitude', 'latitude']]
+    return df
+
+
+def deleted_locations():
+    url = 'https://gis.fiskeridir.no/server/services/FiskeridirWFS/MapServer/WFSServer'
+    args = dict(
+        service='WFS',
+        request='GetFeature',
+        typename='FiskeridirWFS:Akvakultur_-_Slettede_lokaliteter',
+        propertyName='loknr,navn,shape',
+    )
+
+    r = requests.get(url, params=args, timeout=30)
+    r.raise_for_status()
+    txt = r.text
+
+    # Interpret the xml output
+    pattern = re.compile(
+        '<wfs:member>.*?<FiskeridirWFS:loknr>(.*?)</FiskeridirWFS:loknr>.*?'
+        '<FiskeridirWFS:navn>(.*?)</FiskeridirWFS:navn>.*?'
+        '<gml:pos>(.*?) (.*?)</gml:pos>.*?</wfs:member>',
+        flags=re.DOTALL,
+    )
+    data = pattern.findall(txt)
+
+    # Encapsulate as xarray.Dataset
+    df = pd.DataFrame(data, columns=['siteNr', 'name', 'latitude', 'longitude'])
+    df = df[['siteNr', 'name', 'longitude', 'latitude']]
+    return df

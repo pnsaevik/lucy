@@ -34,12 +34,12 @@ def fill_missing_lice(df: schema.Lice) -> schema.Lice:
     date_df = pd.DataFrame(date_range, columns=['date'])
 
     # Create new index
-    farms = df.loknr.drop_duplicates()
+    farms = df.farmid.drop_duplicates()
     new_index = pd.merge(right=date_df, left=farms, how='cross')
-    new_index = new_index.set_index(["loknr", "date"]).index
+    new_index = new_index.set_index(["farmid", "date"]).index
 
     # Apply new index (i.e., add missing columns)
-    df = df.set_index(["loknr", "date"])
+    df = df.set_index(["farmid", "date"])
     df = df.reindex(new_index)
 
     # Add column indicating which lice values are interpolated
@@ -47,7 +47,7 @@ def fill_missing_lice(df: schema.Lice) -> schema.Lice:
 
     # Fill inn missing data
     chunks = []
-    for loknr, group in df.groupby("loknr"):
+    for farmid, group in df.groupby("farmid"):
         # Interpolate adult female lice values
         chunk = group.copy()
         chunk["naf"] = group.naf.interpolate()

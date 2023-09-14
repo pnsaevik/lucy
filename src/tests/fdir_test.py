@@ -7,6 +7,61 @@ import responses
 import json
 
 
+CSV_TEST_DATA = """AKVAKULTURTILLATELSER PR. 23-06-2023 ;;;;;;;;;;;;;;;;;;;;;;;;;;
+TILL_NR;ORG.NR/PERS.NR;NAVN;ADRESSE;POSTNR;POSTSTED;TILDELINGSTIDSPUNKT;TIDSBEGRENSET;TILL_KOMNR;TILL_KOM;FORMÅL;PRODUKSJONSFORM;ART;ART_KODE;TILL_KAP;TILL_ENHET;LOK_NR;LOK_NAVN;LOK_KOMNR;LOK_KOM;LOK_PLASS;VANNMILJØ;LOK_KAP;LOK_ENHET;UTGÅR_DATO;N_GEOWGS84;Ø_GEOWGS84;PROD_OMR
+A A 0001;969159570;NORGES MILJØ- OG BIOVITENSKAPELIGE UNIVERSITET (NMBU);POSTBOKS 5003;1432;ÅS;03-10-1991;;3021;ÅS;KOMMERSIELL;MATFISK;Laks;0711;1.000;TN;10362;NMBU FISKELABORATORIET;3021;ÅS;LAND;FERSKVANN;1.000;TN;;59.669233;10.757967;
+A A 0001;969159570;NORGES MILJØ- OG BIOVITENSKAPELIGE UNIVERSITET (NMBU);POSTBOKS 5003;1432;ÅS;03-10-1991;;3021;ÅS;KOMMERSIELL;MATFISK;Ørret;0713;0.000;TN;10362;NMBU FISKELABORATORIET;3021;ÅS;LAND;FERSKVANN;1.000;TN;;59.669233;10.757967;
+A A 0001;969159570;NORGES MILJØ- OG BIOVITENSKAPELIGE UNIVERSITET (NMBU);POSTBOKS 5003;1432;ÅS;03-10-1991;;3021;ÅS;KOMMERSIELL;MATFISK;Regnbueørret;0714;0.000;TN;10362;NMBU FISKELABORATORIET;3021;ÅS;LAND;FERSKVANN;1.000;TN;;59.669233;10.757967;
+A F 0001;855869942;NORSK INSTITUTT FOR VANNFORSKNING;ØKERNVEIEN 94;0579;OSLO;05-02-1991;31-10-2028;3022;FROGN;FORSKNING;MATFISK;Laks;0711;3.800;TN;10173;SOLBERGSTRAND;3022;FROGN;LAND;FERSKVANN/SALTVANN;7.500;TN;31-10-2028;59.615783;10.652650;
+A F 0001;855869942;NORSK INSTITUTT FOR VANNFORSKNING;ØKERNVEIEN 94;0579;OSLO;05-02-1991;31-10-2028;3022;FROGN;FORSKNING;MATFISK;Ørret;0713;0.000;TN;10173;SOLBERGSTRAND;3022;FROGN;LAND;FERSKVANN/SALTVANN;7.500;TN;31-10-2028;59.615783;10.652650;
+A F 0001;855869942;NORSK INSTITUTT FOR VANNFORSKNING;ØKERNVEIEN 94;0579;OSLO;05-02-1991;31-10-2028;3022;FROGN;FORSKNING;MATFISK;Regnbueørret;0714;0.000;TN;10173;SOLBERGSTRAND;3022;FROGN;LAND;FERSKVANN/SALTVANN;7.500;TN;31-10-2028;59.615783;10.652650;
+A F 0002;855869942;NORSK INSTITUTT FOR VANNFORSKNING;ØKERNVEIEN 94;0579;OSLO;31-03-2017;;3022;FROGN;KOMMERSIELL;SETTEFISK;Rognkjeks (felles);2221;3.000;TN;10173;SOLBERGSTRAND;3022;FROGN;LAND;FERSKVANN/SALTVANN;7.500;TN;31-10-2028;59.615783;10.652650;"""
+
+
+WFS_TEST_DATA = """
+<wfs:FeatureCollection xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:FiskeridirWFS="https://megrim12.fiskeridirektoratet.no:6443/arcgis/services/FiskeridirWFS/MapServer/WFSServer" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" timeStamp="2023-06-23T09:10:17Z" numberMatched="2895" numberReturned="2895" xsi:schemaLocation="http://www.opengis.net/wfs/2.0 http://schemas.opengis.net/wfs/2.0/wfs.xsd http://www.opengis.net/gml/3.2 http://schemas.opengis.net/gml/3.2.1/gml.xsd https://megrim12.fiskeridirektoratet.no:6443/arcgis/services/FiskeridirWFS/MapServer/WFSServer https://gis.fiskeridir.no/server/services/FiskeridirWFS/MapServer/WFSServer?service=wfs%26version=2.0.0%26request=DescribeFeatureType">
+    <wfs:member>
+        <FiskeridirWFS:Akvakultur_-_Slettede_lokaliteter gml:id="Akvakultur_-_Slettede_lokaliteter.10025">
+        <FiskeridirWFS:loknr>10025</FiskeridirWFS:loknr>
+        <FiskeridirWFS:navn>KLEPPSKJER Ø</FiskeridirWFS:navn>
+        <FiskeridirWFS:kommune_akvareg>KARMØY</FiskeridirWFS:kommune_akvareg>
+        <FiskeridirWFS:fylkesnr2020>11</FiskeridirWFS:fylkesnr2020>
+        <FiskeridirWFS:kommunenr>1149</FiskeridirWFS:kommunenr>
+        <FiskeridirWFS:akvakulturregister__intern_>https://sikker.fiskeridir.no/aquareg/web/sites/10025</FiskeridirWFS:akvakulturregister__intern_>
+        <FiskeridirWFS:created_user>SDE</FiskeridirWFS:created_user>
+        <FiskeridirWFS:last_edited_user>SDE</FiskeridirWFS:last_edited_user>
+        <FiskeridirWFS:last_edited_date>2023-06-18T00:30:57</FiskeridirWFS:last_edited_date>
+        <FiskeridirWFS:shape>
+        <gml:Point gml:id="Akvakultur_-_Slettede_lokaliteter.10025.pn.0" srsName="urn:ogc:def:crs:EPSG::4326">
+        <gml:pos>59.26178000 5.16283900</gml:pos>
+        </gml:Point>
+        </FiskeridirWFS:shape>
+        <FiskeridirWFS:versionvalidfrom>2006-05-30T22:00:00</FiskeridirWFS:versionvalidfrom>
+        </FiskeridirWFS:Akvakultur_-_Slettede_lokaliteter>
+    </wfs:member>
+    <wfs:member>
+        <FiskeridirWFS:Akvakultur_-_Slettede_lokaliteter gml:id="Akvakultur_-_Slettede_lokaliteter.10027">
+        <FiskeridirWFS:loknr>10027</FiskeridirWFS:loknr>
+        <FiskeridirWFS:navn>SÆVELANDSVIK</FiskeridirWFS:navn>
+        <FiskeridirWFS:kommune_akvareg>KARMØY</FiskeridirWFS:kommune_akvareg>
+        <FiskeridirWFS:fylkesnr2020>11</FiskeridirWFS:fylkesnr2020>
+        <FiskeridirWFS:kommunenr>1149</FiskeridirWFS:kommunenr>
+        <FiskeridirWFS:akvakulturregister__intern_>https://sikker.fiskeridir.no/aquareg/web/sites/10027</FiskeridirWFS:akvakulturregister__intern_>
+        <FiskeridirWFS:created_user>SDE</FiskeridirWFS:created_user>
+        <FiskeridirWFS:last_edited_user>SDE</FiskeridirWFS:last_edited_user>
+        <FiskeridirWFS:last_edited_date>2023-06-18T00:30:57</FiskeridirWFS:last_edited_date>
+        <FiskeridirWFS:shape>
+        <gml:Point gml:id="Akvakultur_-_Slettede_lokaliteter.10027.pn.0" srsName="urn:ogc:def:crs:EPSG::4326">
+        <gml:pos>59.26982300 5.19178800</gml:pos>
+        </gml:Point>
+        </FiskeridirWFS:shape>
+        <FiskeridirWFS:versionvalidfrom>2014-05-04T22:00:00</FiskeridirWFS:versionvalidfrom>
+        </FiskeridirWFS:Akvakultur_-_Slettede_lokaliteter>
+    </wfs:member>
+</wfs:FeatureCollection>
+"""
+
+
 FISKDIR_TEST_DATA = """
 {"content":[
  {"referenceId":"38957-1682892000-930367931-930367931",
@@ -114,3 +169,29 @@ class Test_biomass:
             'endTime', 'siteNr', 'siteName', 'sourceSystem', 'productionUnitForeignId',
             'specieCode', 'numFish', 'avgWeight', 'weightUnit'
         ]
+
+
+class Test_farm_locations:
+    @responses.activate
+    def test_returns_dataset(self):
+        responses.add(
+            responses.GET,
+            'https://api.fiskeridir.no/pub-aqua/api/v1/dump/new-legacy-csv',
+            body=CSV_TEST_DATA,
+        )
+
+        df = fiskeridir.farm_locations()
+        assert list(df.columns) == ['siteNr', 'name', 'longitude', 'latitude']
+
+
+class Test_deleted_locations:
+    @responses.activate
+    def test_returns_dataset(self):
+        responses.add(
+            responses.GET,
+            'https://gis.fiskeridir.no/server/services/FiskeridirWFS/MapServer/WFSServer',
+            body=WFS_TEST_DATA,
+        )
+
+        df = fiskeridir.deleted_locations()
+        assert list(df.columns) == ['siteNr', 'name', 'longitude', 'latitude']
