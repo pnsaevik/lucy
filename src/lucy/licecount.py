@@ -5,10 +5,10 @@ Functions for computing the number of lice released from farms
 
 import pandas as pd
 import numpy as np
-import datetime
+from . import schema
 
 
-def fill_missing_lice(df: pd.DataFrame) -> pd.DataFrame:
+def fill_missing_lice(df: schema.Lice) -> schema.Lice:
     """
     Fill in missing lice counts
 
@@ -18,55 +18,51 @@ def fill_missing_lice(df: pd.DataFrame) -> pd.DataFrame:
     as the gaps less than 4 consecutive weeks. Otherwise, missing lice
     counts are assumed to be zero.
 
-    It is assumed that the input dataframe has columns named "Fastsittende lus",
-    "Lus i bevegelige stadier", "Voksne hunnlus", "Lokalitetsnummer", "Uke", "År".
-
     The output dataframe has the same columns as the input dataframe, in addition
-    to an extra column "Rådata mangler" which indicates whether the adult female lice counts
+    to an extra column "missing" which indicates whether the adult female lice counts
     were missing from the raw data.
 
     :param df: Input dataframe
     :return: New dataframe
     """
 
-    adf_col = "Voksne hunnlus"
     col_order = list(df.columns)
 
     # Find date range
-    yw_min, yw_max = df[["År", "Uke"]].sort_values(["År", "Uke"]).iloc[[0, -1], :].values
-    date_min = datetime.datetime.strptime(f'{yw_min[0]}-{yw_min[1]}-1', '%G-%V-%u')
-    date_max = datetime.datetime.strptime(f'{yw_max[0]}-{yw_max[1]}-1', '%G-%V-%u')
-    date_range = pd.date_range(date_min, date_max, freq='7D')
+    df = df.assign(date=pd.to_datetime(df.date))
+    date_range = pd.date_range(df.date.min(), df.date.max(), freq='7D')
+    date_df = pd.DataFrame(date_range, columns=['date'])
 
     # Create new index
-    farms = df[["Lokalitetsnummer"]].drop_duplicates()
-    new_index = pd.merge(right=date_range.isocalendar(), left=farms, how='cross')
-    new_index = new_index.rename(columns={'year': 'År', 'week': 'Uke'})
-    new_index = new_index.set_index(["Lokalitetsnummer", "År", "Uke"]).index
+    farms = df.loknr.drop_duplicates()
+    new_index = pd.merge(right=date_df, left=farms, how='cross')
+    new_index = new_index.set_index(["loknr", "date"]).index
 
     # Apply new index (i.e., add missing columns)
-    df = df.set_index(["Lokalitetsnummer", "År", "Uke"])
+    df = df.set_index(["loknr", "date"])
     df = df.reindex(new_index)
 
-    # Add column indicating that lice values are interpolated
-    df["Rådata mangler"] = np.isnan(df[adf_col].values)
+    # Add column indicating which lice values are interpolated
+    df["missing"] = np.isnan(df.naf.values)
 
     # Fill inn missing data
     chunks = []
-    for loknr, group in df.groupby("Lokalitetsnummer"):
+    for loknr, group in df.groupby("loknr"):
         # Interpolate adult female lice values
         chunk = group.copy()
-        chunk[adf_col] = group[adf_col].interpolate()
+        chunk["naf"] = group.naf.interpolate()
 
-        # Remove interpolation if three or more consecutive missing values
-        missing = group["Rådata mangler"].values
+        # Remove interpolation if many consecutive missing values
+        missing = group.missing.values
         remove_interpolated = missing & (consecutive(missing) >= 4)
-        chunk.loc[remove_interpolated, adf_col] = 0
+        chunk.loc[remove_interpolated, "naf"] = 0
 
         chunks.append(chunk)
 
     df = pd.concat(chunks)
-    return df.reset_index().loc[:, col_order + ["Rådata mangler"]]
+    df = df.reset_index().loc[:, col_order + ["missing"]]
+    df['date'] = df.date.values.astype('datetime64[D]').astype(str)
+    return df
 
 
 def consecutive(v):
