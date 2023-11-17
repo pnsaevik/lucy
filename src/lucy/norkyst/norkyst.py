@@ -139,6 +139,31 @@ class NorKystDataseries:
         db = NorKystDataseries(dsets)
         return db
 
+    def subset(self, start, stop) -> "NorKystDataseries":
+        """
+        Extract a subset of the data series
+
+        :param start: numpy-compatible start date
+        :param stop: numpy-compatible stop date
+        :return: A subset of the data series
+        """
+
+        idx_start, _ = self._find_dataset_index_from_time(start)
+        _, idx_stop = self._find_dataset_index_from_time(stop)
+
+        ds_new = NorKystDataseries(self._dsets[idx_start:idx_stop])
+        if self._time_index is not None:
+            ds_new._time_index = self._time_index[idx_start:idx_stop]
+
+        return ds_new
+
+    @property
+    def datasets(self) -> typing.List[NorKystDataset]:
+        """
+        The datasets that are contained in this data series
+        """
+        return self._dsets
+
     def _create_time_index(self):
         self._time_index = [(d.start_date, d.stop_date) for d in self._dsets]
 
@@ -192,31 +217,37 @@ class NorKystDataseries:
         y, x = numerics.bilin_inv(lat, lon, lat_rho, lon_rho)
         return x, y
 
-    def profile(self, start, stop, lat, lon, az) -> xr.Dataset:
-        """
-        Load profile data
 
-        The function finds the grid point closest to the given lat/lon coordinates
-        and extracts profile information from this grid point. The otuput dataset
-        contains 'dens', 'salt', 'temp' at the grid point, and interpolated values
-        for 'u', 'v'. Velocities at land points are set to zero.
+def extract_profile(files, start, stop, lat, lon, az) -> xr.Dataset:
+    """
+    Load profile data
 
-        Velocities are rotated according to the given azimuthal orientation. The
-        direction is given in clockwise degrees relative to north. That is, 0
-        means north and 90 means east. Only the u direction is given, the v
-        direction is always equal to the u direction minus 90 degrees.
+    The function finds the grid point closest to the given lat/lon coordinates
+    and extracts profile information from this grid point. The otuput dataset
+    contains 'dens', 'salt', 'temp' at the grid point, and interpolated values
+    for 'u', 'v'. Velocities at land points are set to zero.
 
-        :param start: numpy-compatible start date
-        :param stop: numpy-compatible stop date
-        :param lat: Latitude of profile position
-        :param lon: Longitude of profile position
-        :param az: Azimuthal orientation of u velocity (0 is north, 90 is east)
-        :return: Profile data
-        """
+    Velocities are rotated according to the given azimuthal orientation. The
+    direction is given in clockwise degrees relative to north. That is, 0
+    means north and 90 means east. Only the u direction is given, the v
+    direction is always equal to the u direction minus 90 degrees.
 
-        idx_start, _ = self._find_dataset_index_from_time(start)
-        _, idx_stop = self._find_dataset_index_from_time(stop)
+    :param files: Either a list of files or a file name glob pattern
+    :param start: numpy-compatible start date
+    :param stop: numpy-compatible stop date
+    :param lat: Latitude of profile position
+    :param lon: Longitude of profile position
+    :param az: Azimuthal orientation of u velocity (0 is north, 90 is east)
+    :return: Profile data
+    """
 
-        from .roms import load_location
-        fnames = [d.fname for d in self._dsets[idx_start:idx_stop]]
-        return load_location(fnames, lat, lon, az)
+    if isinstance(files, str):
+        ds = NorKystDataseries.from_pattern(files)
+    else:
+        ds = NorKystDataseries.from_filenames(files)
+
+    ds_subset = ds.subset(start, stop)
+
+    from .roms import load_location
+    fnames = [d.fname for d in ds_subset.datasets]
+    return load_location(fnames, lat, lon, az)

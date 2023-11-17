@@ -84,10 +84,10 @@ class Test_NorKystDataseries_select_time:
         assert lower is upper
 
 
-class Test_NorKystDataseries_profile:
+class Test_extract_profile:
     def test_returns_xarray_dataset(self):
-        ds = norkyst.NorKystDataseries.from_pattern(NORKYST_GLOB)
-        result = ds.profile(
+        result = norkyst.extract_profile(
+            files=NORKYST_GLOB,
             start='2015-09-07T03',
             stop='2015-09-07T06',
             lon=5.27266,

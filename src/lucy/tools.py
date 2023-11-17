@@ -3,12 +3,4 @@ Independent tools for working with salmon lice data
 """
 
 
-def hello_tool():
-    """
-    This is a sphinx description
-
-    This is the much longer description
-
-    :return: Something
-    """
-    pass
+from .norkyst.norkyst import extract_profile
