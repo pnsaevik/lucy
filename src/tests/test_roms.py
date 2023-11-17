@@ -10,8 +10,8 @@ import pytest
 
 
 FIXTURES_DIR = Path(__file__).parent.joinpath('fixtures')
-FORCING_1 = str(FIXTURES_DIR / 'forcing_1.nc')
-FORCING_glob = str(FIXTURES_DIR / 'forcing_?.nc')
+FORCING_1 = str(FIXTURES_DIR / 'norfjords_160m_his.nc4_2015090701-2015090704')
+FORCING_glob = str(FIXTURES_DIR / 'norfjords_160m_his.nc4_20150907*')
 
 
 @pytest.fixture(scope='module')
