@@ -1,5 +1,5 @@
 import numpy as np
-from lucy import numerics
+from lucy.norkyst import numerics
 
 
 class Test_bilin_inv:

@@ -2,7 +2,7 @@
 # noinspection PyUnresolvedReferences
 import netCDF4
 
-from lucy import roms
+from lucy.norkyst import roms
 import numpy as np
 from pathlib import Path
 import xarray as xr

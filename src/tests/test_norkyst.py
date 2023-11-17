@@ -1,5 +1,5 @@
 import pytest
-from lucy import norkyst
+from lucy.norkyst import norkyst
 import numpy as np
 from pathlib import Path
 

@@ -1,4 +1,4 @@
-from lucy import eos
+from lucy.norkyst import eos
 import numpy as np
 import pytest
 
