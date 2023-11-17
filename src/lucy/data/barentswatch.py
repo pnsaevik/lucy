@@ -6,7 +6,7 @@ import requests
 import os
 import pandas as pd
 import io
-from . import schema
+from .. import schema
 import datetime
 
 

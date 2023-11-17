@@ -1,4 +1,4 @@
-from lucy import barentswatch
+from lucy.data import barentswatch
 import os
 import responses
 

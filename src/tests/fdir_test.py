@@ -1,7 +1,7 @@
 import pytest
 import requests
 
-from lucy import fiskeridir
+from lucy.data import fiskeridir
 import numpy as np
 import responses
 import json

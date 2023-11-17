@@ -8,7 +8,7 @@ import pandas as pd
 import time
 import re
 import io
-from . import schema
+from .. import schema
 
 
 def date2str(dt) -> str:
