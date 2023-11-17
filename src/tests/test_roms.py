@@ -54,7 +54,7 @@ class Test_compute_azimuthal_vel:
 
 class Test_open_location:
     def test_correct_profile_data(self):
-        dset = roms.open_location(FORCING_glob, lat=59.03, lon=5.68, az=0)
+        dset = roms.load_location(FORCING_glob, lat=59.03, lon=5.68, az=0)
         varnames = ['time', 'depth', 'u', 'v', 'salt', 'temp', 'dens']
         try:
             df = dset[varnames].to_dataframe()

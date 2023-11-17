@@ -15,9 +15,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def open_location(file, lat, lon, az) -> xr.Dataset:
+def load_location(file, lat, lon, az) -> xr.Dataset:
     """
-    Open ROMS dataset at specific location
+    Load ROMS dataset at specific location
 
     The output coordinates are 'time' and 'depth'. Fields are interpolated to the
     desired position, and the depth of each vertical level is computed. Current
@@ -63,7 +63,7 @@ def open_location(file, lat, lon, az) -> xr.Dataset:
             logger.info(f'Rotate velocity vectors, compute density')
             u = compute_azimuthal_vel(dset, az * (np.pi / 180))
             v = compute_azimuthal_vel(dset, (az + 90) * (np.pi / 180))
-            dset = dset.assign(u=u, v=v)
+            dset = dset.assign(u=u, v=v).drop_vars('angle')
 
             dset = dset.assign(z_rho_star=zrho_star)
             dset = dset.assign(dens=compute_dens(dset))
@@ -89,7 +89,7 @@ def open_location(file, lat, lon, az) -> xr.Dataset:
     return dset_combined
 
 
-def compute_zrho(dset: xr.Dataset) -> xr.Dataset:
+def compute_zrho(dset: xr.Dataset) -> xr.DataArray:
     """
     Compute z_rho variable from a ROMS dataset
 
@@ -144,7 +144,7 @@ def compute_dens(dset: xr.Dataset) -> xr.DataArray:
     Compute variable ``dens`` from a ROMS dataset
 
     :param dset: ROMS dataset
-    :return: New dataset with ``dens`` added
+    :return: Density variable
     """
     dens = eos.roms_rho(dset.temp, dset.salt, dset.z_rho_star)
     dens.name = 'dens'
@@ -192,6 +192,7 @@ def select_xy(dset: xr.Dataset, x, y) -> xr.Dataset:
     # Use midpoint velocity values
     dset = dset.drop_vars(cvars.intersection(dset.variables))
     dset = dset.interp(xi_u=0.5, eta_v=0.5)
+    dset = dset.drop_vars(['xi_u', 'eta_v'])
 
     return dset
 

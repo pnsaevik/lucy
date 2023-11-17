@@ -1,8 +1,8 @@
 """
 Functions for interacting with the NorKyst ocean model
 """
-
-
+import contextlib
+from . import numerics
 import xarray as xr
 import typing
 import re
@@ -24,8 +24,7 @@ class NorKystDataset:
         :param dset: If supplied, overrides the given file as the data source
         """
         self._fname = fname
-        self._dset = dset
-        self._dset_empty_at_init = (dset is None)
+        self._dset_init = dset
         self._start_date = None
         self._stop_date = None
 
@@ -36,19 +35,20 @@ class NorKystDataset:
         """
         return self._fname
 
-    def close(self):
+    @contextlib.contextmanager
+    def open(self) -> xr.Dataset:
         """
-        Closes the underlying data source
+        Open the underlying data source
         """
-        self._dset.close()
+        if self._dset_init is not None:
+            yield self._dset_init
 
-    def __enter__(self):
-        if self._dset_empty_at_init:
-            self._dset = xr.open_dataset(self._fname)
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
+        else:
+            dset = xr.open_dataset(self._fname)
+            try:
+                yield dset
+            finally:
+                dset.close()
 
     def _getdates(self):
         # Try first his-pattern
@@ -158,6 +158,13 @@ class NorKystDataseries:
         :return: A tuple (lower, upper) containing the datasets
         """
 
+        dset_index_lower, dset_index_upper = self._find_dataset_index_from_time(time)
+
+        lower = self._dsets[dset_index_lower]
+        upper = self._dsets[dset_index_upper]
+        return lower, upper
+
+    def _find_dataset_index_from_time(self, time):
         nptime = np.datetime64(time)
         if (nptime < self._dsets[0].start_date) or (self._dsets[-1].stop_date < nptime):
             raise ValueError(f'Time value outside range: {nptime}')
@@ -168,6 +175,48 @@ class NorKystDataseries:
         start_times, stop_times = np.asarray(self._time_index).T
         dset_index_lower = np.searchsorted(start_times, nptime, side='right') - 1
         dset_index_upper = np.searchsorted(stop_times, nptime, side='left')
-        lower = self._dsets[dset_index_lower]
-        upper = self._dsets[dset_index_upper]
-        return lower, upper
+        return dset_index_lower, dset_index_upper
+
+    def xy(self, lat, lon):
+        """
+        Find xy coordinates from latitude, longitude
+
+        :param lat: Latitude coordinate
+        :param lon: Longitude coordinate
+        :return: A tuple (x, y) of internal coordinate values
+        """
+
+        with self._grid_dset.open() as dset:
+            lat_rho = dset.lat_rho.values
+            lon_rho = dset.lon_rho.values
+        y, x = numerics.bilin_inv(lat, lon, lat_rho, lon_rho)
+        return x, y
+
+    def profile(self, start, stop, lat, lon, az) -> xr.Dataset:
+        """
+        Load profile data
+
+        The function finds the grid point closest to the given lat/lon coordinates
+        and extracts profile information from this grid point. The otuput dataset
+        contains 'dens', 'salt', 'temp' at the grid point, and interpolated values
+        for 'u', 'v'. Velocities at land points are set to zero.
+
+        Velocities are rotated according to the given azimuthal orientation. The
+        direction is given in clockwise degrees relative to north. That is, 0
+        means north and 90 means east. Only the u direction is given, the v
+        direction is always equal to the u direction minus 90 degrees.
+
+        :param start: numpy-compatible start date
+        :param stop: numpy-compatible stop date
+        :param lat: Latitude of profile position
+        :param lon: Longitude of profile position
+        :param az: Azimuthal orientation of u velocity (0 is north, 90 is east)
+        :return: Profile data
+        """
+
+        idx_start, _ = self._find_dataset_index_from_time(start)
+        _, idx_stop = self._find_dataset_index_from_time(stop)
+
+        from .roms import load_location
+        fnames = [d.fname for d in self._dsets[idx_start:idx_stop]]
+        return load_location(fnames, lat, lon, az)
