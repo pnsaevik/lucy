@@ -7,8 +7,8 @@ from __future__ import annotations
 import numpy as np
 import glob
 import xarray as xr
-import effluent.eos
-import effluent.numerics
+from . import eos
+from . import numerics
 import logging
 
 
@@ -43,7 +43,7 @@ def open_location(file, lat, lon, az) -> xr.Dataset:
     with xr.open_dataset(fnames[0]) as dset:
         lat_rho = dset.lat_rho.values
         lon_rho = dset.lon_rho.values
-        yx_fractional = effluent.numerics.bilin_inv(lat, lon, lat_rho, lon_rho)
+        yx_fractional = numerics.bilin_inv(lat, lon, lat_rho, lon_rho)
         y, x = np.round(yx_fractional).astype('i4')
 
         # Compute depth info
@@ -146,7 +146,7 @@ def compute_dens(dset: xr.Dataset) -> xr.DataArray:
     :param dset: ROMS dataset
     :return: New dataset with ``dens`` added
     """
-    dens = effluent.eos.roms_rho(dset.temp, dset.salt, dset.z_rho_star)
+    dens = eos.roms_rho(dset.temp, dset.salt, dset.z_rho_star)
     dens.name = 'dens'
     return dens
 
