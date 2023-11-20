@@ -7,4 +7,5 @@ jobs:
     uses: ./.github/workflows/testing.yml
   upload_doc:
     needs: ["run_tests"]
+    if: github.ref == 'refs/heads/main'
     uses: ./.github/workflows/sphinx.yml
