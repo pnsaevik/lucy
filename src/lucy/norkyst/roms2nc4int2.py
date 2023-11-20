@@ -140,7 +140,7 @@ def open_files(ofile, ifile, gfile):
 
 def read_args(argv):
     # Print help message when requested
-    if len(argv) < 3 or len(argv) > 4 or '--help' in argv:
+    if len(argv) < 2 or len(argv) > 3 or '--help' in argv:
         print(
             'Usage 1: roms2nc4int2 input_file output_file\n'
             '  Copies selected variables from `input_file` to `output_file`, using netCDF4\n'
