@@ -1,0 +1,10 @@
+name: Staging
+
+on: push
+
+jobs:
+  run_tests:
+    uses: ./.github/workflows/testing.yml
+  upload_doc:
+    needs: ["run_tests"]
+    uses: ./.github/workflows/sphinx.yml
