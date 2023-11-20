@@ -21,4 +21,4 @@ jobs:
       - name: Upload documentation
         uses: actions/upload-pages-artifact@v2
         with:
-          path: doc/build/
+          path: docs/build/
