@@ -222,4 +222,4 @@ def farms() -> schema.Farms:
     df_a['deleted'] = False
     df_b['deleted'] = True
 
-    return pd.concat([df_a, df_b])
+    return pd.concat([df_a, df_b])  # type: ignore

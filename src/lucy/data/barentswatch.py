@@ -89,4 +89,4 @@ def lice(year: int) -> schema.Lice:
     df.index.name = 'id'
     datestr = [f'{yr}-{wk}-1' for yr, wk in zip(df['År'], df['Uke'])]
     df['date'] = [datetime.datetime.strptime(s, "%G-%V-%u") for s in datestr]
-    return df
+    return df  # type: ignore

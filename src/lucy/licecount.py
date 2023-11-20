@@ -80,7 +80,7 @@ def consecutive(v):
         return np.zeros((0, ), dtype=np.int64)
 
     breaks = v[:-1] != v[1:]
-    group_num = np.concatenate([[0], np.cumsum(breaks)])
+    group_num = np.concatenate([[0], np.cumsum(breaks)])  # type: ignore
     _, unq_cnt = np.unique(group_num, return_counts=True)
     return np.repeat(unq_cnt, unq_cnt)
 
