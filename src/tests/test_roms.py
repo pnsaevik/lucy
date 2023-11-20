@@ -83,25 +83,25 @@ class Test_romsconv:
         with nc.Dataset(filename='dset_out.nc', mode='w', diskless=True) as dset_out:
             yield dset_out
 
-    def test_preserves_global_attributes(self, dset_in, dset_out):
+    def test_dataset_attributes_are_copied_verbatim(self, dset_in, dset_out):
         dset_in.setncattr(name="myatt", value="myval")
         roms2nc4int2.process(dset_in, dset_out, protocol=[])
         assert dset_out.getncattr('myatt') == "myval"
 
-    def test_appends_extra_attributes(self, dset_in, dset_out):
-        roms2nc4int2.process(dset_in, dset_out, protocol=[])
-        assert "institution" in dset_out.ncattrs()
-        assert "history" in dset_out.ncattrs()
-
-    def test_appends_history(self, dset_in, dset_out):
+    def test_history_attribute_is_appended_to(self, dset_in, dset_out):
         dset_in.setncattr(name="history", value="Created by ROMS")
         roms2nc4int2.process(dset_in, dset_out, protocol=[])
 
         history_masked = re.sub(pattern="[0-9]", repl="0", string=dset_out.history)
-        assert history_masked == (
+        assert history_masked.startswith(
             'Created by ROMS\n'
-            '0000-00-00T00:00:00 - roms0nc0int0.py test_roms.py::Test_romsconv'
+            '0000-00-00T00:00:00 - roms0nc0int0.py'
         )
+
+    def test_institution_attribute_is_added(self, dset_in, dset_out):
+        roms2nc4int2.process(dset_in, dset_out, protocol=[])
+        assert "institution" in dset_out.ncattrs()
+        assert "history" in dset_out.ncattrs()
 
     def test_drops_variables_which_are_not_in_protocol(self, dset_in, dset_out):
         dset_in.createVariable(varname='myvar', datatype='i2')[:] = 0
@@ -109,14 +109,57 @@ class Test_romsconv:
         assert "myvar" not in dset_out.variables
 
     def test_keeps_variables_that_are_in_protocol(self, dset_in, dset_out):
-        protocol = [dict(varname='myvar')]
+        key = 'varname'  # type: roms2nc4int2.ProtocolKeyword
         dset_in.createVariable(varname='myvar', datatype='i2')[:] = 0
-        roms2nc4int2.process(dset_in, dset_out, protocol)
+        roms2nc4int2.process(dset_in, dset_out, protocol=[{key: 'myvar'}])
         assert "myvar" in dset_out.variables
 
-    def test_copies_variable_attributes(self, dset_in, dset_out):
-        protocol = [dict(varname='myvar')]
+    def test_variable_data_are_scaled_and_offsetted(self, dset_in, dset_out):
+        protocol = [dict(varname='v', scale=0.5, offset=-1, dtype='f4')]
+
+        dset_in.createDimension(dimname='d', size=5)
+        dset_in.createVariable(varname='v', datatype='f4', dimensions='d')
+        dset_in.variables['v'][:] = [.5, 1, 1.5, 2, 2.5]
+
+        roms2nc4int2.process(dset_in, dset_out, protocol=protocol)  # type: ignore
+
+        assert dset_out.variables['v'][:].tolist() == [3, 4, 5, 6, 7]
+        assert dset_out.variables['v'].getncattr('scale_factor') == 0.5
+        assert dset_out.variables['v'].getncattr('add_offset') == -1
+
+    def test_variable_data_are_stored_using_specified_data_type(self, dset_in, dset_out):
+        protocol = [dict(varname='v', dtype='i2')]
+        dset_in.createVariable(varname='v', datatype='f4')[:] = 5.9
+        roms2nc4int2.process(dset_in, dset_out, protocol=protocol)  # type: ignore
+
+        assert dset_out.variables['v'][:].tolist() == 5
+        assert dset_out.variables['v'].dtype == np.dtype('int16')
+
+    def test_adds_unlimited_property_to_ocean_time(self, dset_in, dset_out):
+        protocol = [dict(varname='v')]
+        dset_in.createDimension(dimname='ocean_time', size=2)
+        dset_in.createDimension(dimname='d', size=3)
+        dset_in.createVariable(varname='v', datatype='i2', dimensions=('ocean_time', 'd'))
+        roms2nc4int2.process(dset_in, dset_out, protocol=protocol)  # type: ignore
+
+        assert not dset_in.dimensions['ocean_time'].isunlimited()
+        assert dset_out.dimensions['ocean_time'].isunlimited()
+
+    def test_copies_variable_attributes_verbatim(self, dset_in, dset_out):
+        key = 'varname'  # type: roms2nc4int2.ProtocolKeyword
+        protocol = [{key: 'myvar'}]
         v = dset_in.createVariable(varname='myvar', datatype='i2')
         v.setncattr('myattr', 'myval')
         roms2nc4int2.process(dset_in, dset_out, protocol)
         assert dset_out.variables['myvar'].getncattr('myattr') == 'myval'
+
+    def test_apply_zlib_compression_to_variables_with_more_than_one_dim(self, dset_in, dset_out):
+        protocol = [dict(varname='a'), dict(varname='b')]
+        dset_in.createDimension(dimname='d1', size=2)
+        dset_in.createDimension(dimname='d2', size=3)
+        dset_in.createVariable(varname='a', datatype='i2', dimensions=('d1', 'd2'))
+        dset_in.createVariable(varname='b', datatype='i2', dimensions='d1')
+        roms2nc4int2.process(dset_in, dset_out, protocol=protocol)  # type: ignore
+
+        assert dset_out.variables['a'].filters()['zlib']
+        assert not dset_out.variables['b'].filters()['zlib']

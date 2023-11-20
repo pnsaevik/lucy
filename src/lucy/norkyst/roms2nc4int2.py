@@ -11,8 +11,10 @@ Loosely based on a previous script by Bjørn Ådlandsvik and Jon Albretsen
 """
 
 import sys
+import netCDF4 as nc
 import numpy as np
 import logging
+import typing
 logger = logging.getLogger(__name__)
 
 
@@ -83,6 +85,10 @@ FILL_VALUES = dict(
 )
 
 
+ProtocolKeyword = typing.Literal["varname", "dtype", "offset", "scale"]
+ProtocolType = typing.List[typing.Dict[ProtocolKeyword, typing.Union[float, str]]]
+
+
 def main():
     import sys
 
@@ -107,7 +113,6 @@ def main():
     else:
         gfile = None
 
-    import netCDF4 as nc
     input_dset = None
     output_dset = None
     grid_dset = None
@@ -164,7 +169,36 @@ def read_csv(txt):
     return [dict(zip(colnames, elm)) for elm in elements[1:]]
 
 
-def process(dset_in, dset_out, protocol):
+def process(dset_in: nc.Dataset, dset_out: nc.Dataset, protocol: ProtocolType):
+    """
+    Converts data according to the given protocol
+
+    The data in the input dataset is loaded, converted and stored to the output dataset
+    according to the given protocol. The protocol is a list of dicts, where each element
+    has a required keyword ``varname`` and optional keywords ``dtype``, ``offset``,
+    ``scale`` and ``unlimited``.
+
+    The conversion process has the following properties:
+
+    1.  Dataset attributes are copied verbatim, except ``history`` which is appended to.
+        An additional attribute "institution" is added.
+
+    2.  Variables which are not contained in ``protocol`` are dropped
+
+    3.  Variable data are scaled and offsetted according to ``scale`` and ``offset``
+
+    4.  Variable data are stored using ``dtype`` data type
+
+    5.  The dimension ``ocean_time`` is set to be unlimited
+
+    6.  All variable attributes are copied verbatim
+
+    7.  Compression with zlib is applied to all variables with more than one dimension
+
+    :param dset_in: Input dataset
+    :param dset_out: Output dataset
+    :param protocol: Conversion protocol
+    """
     # Copy attributes
     logger.info("Copy dataset attributes")
     for attr in dset_in.ncattrs():
