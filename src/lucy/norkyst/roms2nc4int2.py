@@ -9,8 +9,8 @@ Pål Næverlid Sævik <a5606@hi.no>
 
 Loosely based on a previous script by Bjørn Ådlandsvik and Jon Albretsen
 """
+import contextlib
 
-import sys
 import netCDF4 as nc
 import numpy as np
 import logging
@@ -90,29 +90,24 @@ ProtocolType = typing.List[typing.Dict[ProtocolKeyword, typing.Union[float, str]
 
 
 def main():
-    import sys
+    # Initialize logger
+    logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
-    # Print help message when requested
-    if len(sys.argv) < 3 or len(sys.argv) > 4 or '--help' in sys.argv:
-        print(
-            'Usage 1: roms2nc4int2 input_file output_file\n'
-            '  Copies selected variables from `input_file` to `output_file`, using netCDF4\n'
-            '  file format with zlib compression and linear packing compression.\n'
-        )
-        print(
-            'Usage 2: roms2nc4int2 grid_file input_file output_file\n'
-            '  Same as usage 1, but also copies grid georeferencing data from `grid_file`.'
-        )
+    # Read command line arguments
+    import sys
+    filenames = read_args(sys.argv[1:])
+    if filenames is None:
         return
 
-    # Interpret command line arguments
-    ofile = sys.argv[-1]
-    ifile = sys.argv[-2]
-    if len(sys.argv) > 3:
-        gfile = sys.argv[-3]
-    else:
-        gfile = None
+    # Open files and run script
+    with open_files(*filenames) as (output_dset, input_dset, grid_dset):
+        run(input_dset, output_dset, read_csv(DEFAULT_PROTOCOL), grid_dset)
 
+    logger.info("Finished")
+
+
+@contextlib.contextmanager
+def open_files(ofile, ifile, gfile):
     input_dset = None
     output_dset = None
     grid_dset = None
@@ -131,8 +126,7 @@ def main():
             grid_dset = nc.Dataset(gfile)
             grid_dset.set_auto_maskandscale(False)
 
-        # Process dataset
-        run(input_dset, output_dset, read_csv(DEFAULT_PROTOCOL), grid_dset)
+        yield output_dset, input_dset, grid_dset
 
     finally:
         # Close datasets silently
@@ -143,7 +137,30 @@ def main():
                 except IOError:
                     pass
 
-    logger.info("Finished")
+
+def read_args(argv):
+    # Print help message when requested
+    if len(argv) < 3 or len(argv) > 4 or '--help' in argv:
+        print(
+            'Usage 1: roms2nc4int2 input_file output_file\n'
+            '  Copies selected variables from `input_file` to `output_file`, using netCDF4\n'
+            '  file format with zlib compression and linear packing compression.\n'
+        )
+        print(
+            'Usage 2: roms2nc4int2 grid_file input_file output_file\n'
+            '  Same as usage 1, but also copies grid georeferencing data from `grid_file`.'
+        )
+        return None
+
+    # Interpret command line arguments
+    ofile = argv[-1]
+    ifile = argv[-2]
+    if len(argv) > 3:
+        gfile = argv[-3]
+    else:
+        gfile = None
+
+    return ofile, ifile, gfile
 
 
 def read_csv(txt):
@@ -358,6 +375,7 @@ def append_history(dset):
     else:
         history = ""
 
+    import sys
     history += str(np.datetime64('now')) + ' - roms2nc4int2.py ' + " ".join(sys.argv[1:])
     return history
 
@@ -371,5 +389,4 @@ def get_chunks(var):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
     main()
