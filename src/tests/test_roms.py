@@ -144,6 +144,25 @@ class Test_romsconv:
         assert dset_out.variables['v'].getncattr('scale_factor') == 0.5
         assert dset_out.variables['v'].getncattr('add_offset') == -1
 
+    def test_nan_values_in_velocity_variables_are_set_to_zero(self, dset_in, dset_out):
+        protocol = [
+            dict(varname='u', dtype='i2'),
+            dict(varname='v', dtype='i2'),
+        ]
+
+        dset_in.createDimension(dimname='d', size=3)
+        dset_in.createVariable(varname='u', datatype='f4', dimensions='d', fill_value=1e37)
+        dset_in.createVariable(varname='v', datatype='f4', dimensions='d', fill_value=1e37)
+        dset_in.variables['u'].set_auto_maskandscale(False)
+        dset_in.variables['v'].set_auto_maskandscale(False)
+        dset_in.variables['u'][:] = [1, 2, 1e37]
+        dset_in.variables['v'][:] = [4, 1e37, 6]
+
+        roms2nc4int2.run(dset_in, dset_out, protocol)  # type: ignore
+
+        assert dset_out.variables['u'][:].tolist() == [1, 2, 0]
+        assert dset_out.variables['v'][:].tolist() == [4, 0, 6]
+
     def test_variable_data_are_stored_using_specified_data_type(self, dset_in, dset_out):
         protocol = [dict(varname='v', dtype='i2')]
         dset_in.createVariable(varname='v', datatype='f4')[:] = 5.9

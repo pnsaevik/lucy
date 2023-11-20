@@ -203,15 +203,17 @@ def run(
 
     3.  Variable data are scaled and offsetted according to ``scale`` and ``offset``
 
-    4.  Variable data are stored using ``dtype`` data type
+    4.  NaN values in velocities 'u' and 'v' are set to zero
 
-    5.  The dimension ``ocean_time`` is set to be unlimited
+    5.  Variable data are stored using ``dtype`` data type
 
-    6.  All variable attributes are copied verbatim
+    6.  The dimension ``ocean_time`` is set to be unlimited
 
-    7.  Compression with zlib is applied to all variables with more than one dimension
+    7.  All variable attributes are copied verbatim
 
-    8.  If supplied, add georeferencing information from grid dataset
+    8.  Compression with zlib is applied to all variables with more than one dimension
+
+    9.  If supplied, add georeferencing information from grid dataset
 
     :param dset_in: Input dataset
     :param dset_out: Output dataset
@@ -254,7 +256,7 @@ def copyvar(dset_src, dset_dst, varname, dtype=None, offset=None, scale=None, **
             dset_dst.createDimension(dimname, dimsize)
 
     # Define fill value
-    if scale is not None:
+    if dtype is not None:
         kwargs['fill_value'] = FILL_VALUES[dtype]
     elif '_FillValue' in src.ncattrs():
         kwargs['fill_value'] = src.getncattr('_FillValue')
@@ -308,6 +310,12 @@ def copyvar(dset_src, dset_dst, varname, dtype=None, offset=None, scale=None, **
             underflow = -np.inf
             overflow = np.inf
 
+        # Define special land mask value for u and v
+        if varname in ('u', 'v'):
+            invalid_value = 0
+        else:
+            invalid_value = fill_value
+
         # Copy with scaling, chunk-wise
         chunks = get_chunks(src)
         for chunk in chunks:
@@ -318,7 +326,7 @@ def copyvar(dset_src, dset_dst, varname, dtype=None, offset=None, scale=None, **
             if raw_values.shape != () and fill_value is not None:
                 raw_values[raw_values < underflow] = fill_value
                 raw_values[raw_values > overflow] = fill_value
-                raw_values[is_invalid[chunk]] = fill_value
+                raw_values[is_invalid[chunk]] = invalid_value
             dst[chunk] = raw_values
 
         # Remove scale and offset attributes if redundant
