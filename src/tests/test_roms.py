@@ -1,12 +1,11 @@
-# Extra top-level import to address bug in netCDF4 library
-# noinspection PyUnresolvedReferences
-import netCDF4
+import netCDF4 as nc
 
-from lucy.norkyst import roms
+from lucy.norkyst import roms, roms2nc4int2
 import numpy as np
 from pathlib import Path
 import xarray as xr
 import pytest
+import re
 
 
 FIXTURES_DIR = Path(__file__).parent.joinpath('fixtures')
@@ -71,3 +70,53 @@ class Test_open_location:
             expected = fp.read()
 
         assert txt == expected
+
+
+class Test_romsconv:
+    @pytest.fixture(scope='function')
+    def dset_in(self):
+        with nc.Dataset(filename='dset_in.nc', mode='w', diskless=True) as dset_in:
+            yield dset_in
+
+    @pytest.fixture(scope='function')
+    def dset_out(self):
+        with nc.Dataset(filename='dset_out.nc', mode='w', diskless=True) as dset_out:
+            yield dset_out
+
+    def test_preserves_global_attributes(self, dset_in, dset_out):
+        dset_in.setncattr(name="myatt", value="myval")
+        roms2nc4int2.process(dset_in, dset_out, protocol=[])
+        assert dset_out.getncattr('myatt') == "myval"
+
+    def test_appends_extra_attributes(self, dset_in, dset_out):
+        roms2nc4int2.process(dset_in, dset_out, protocol=[])
+        assert "institution" in dset_out.ncattrs()
+        assert "history" in dset_out.ncattrs()
+
+    def test_appends_history(self, dset_in, dset_out):
+        dset_in.setncattr(name="history", value="Created by ROMS")
+        roms2nc4int2.process(dset_in, dset_out, protocol=[])
+
+        history_masked = re.sub(pattern="[0-9]", repl="0", string=dset_out.history)
+        assert history_masked == (
+            'Created by ROMS\n'
+            '0000-00-00T00:00:00 - roms0nc0int0.py test_roms.py::Test_romsconv'
+        )
+
+    def test_drops_variables_which_are_not_in_protocol(self, dset_in, dset_out):
+        dset_in.createVariable(varname='myvar', datatype='i2')[:] = 0
+        roms2nc4int2.process(dset_in, dset_out, protocol=[])
+        assert "myvar" not in dset_out.variables
+
+    def test_keeps_variables_that_are_in_protocol(self, dset_in, dset_out):
+        protocol = [dict(varname='myvar')]
+        dset_in.createVariable(varname='myvar', datatype='i2')[:] = 0
+        roms2nc4int2.process(dset_in, dset_out, protocol)
+        assert "myvar" in dset_out.variables
+
+    def test_copies_variable_attributes(self, dset_in, dset_out):
+        protocol = [dict(varname='myvar')]
+        v = dset_in.createVariable(varname='myvar', datatype='i2')
+        v.setncattr('myattr', 'myval')
+        roms2nc4int2.process(dset_in, dset_out, protocol)
+        assert dset_out.variables['myvar'].getncattr('myattr') == 'myval'
