@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Standardized schema for tables
 - Allow downloading farm data from the Fisheries Directorate
+- Script for converting raw ROMS files to NorKyst files
 
 ### Changed
 - Lice data are no longer extrapolated in time
