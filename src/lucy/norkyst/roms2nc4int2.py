@@ -351,6 +351,7 @@ def append_history(dset):
 
 
 def get_chunks(var):
+    # noinspection PyUnresolvedReferences
     if np.product(var.shape) < 1000*1000*50:
         return [...]
     else:
