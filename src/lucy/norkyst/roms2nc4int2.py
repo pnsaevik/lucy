@@ -126,17 +126,13 @@ def main():
         output_dset = nc.Dataset(ofile, mode='w', format='NETCDF4_CLASSIC')
         output_dset.set_auto_maskandscale(False)
 
-        # Process dataset
-        process(input_dset, output_dset, read_csv(DEFAULT_PROTOCOL))
-
         if gfile:
             logger.info("Open grid dataset: " + gfile)
             grid_dset = nc.Dataset(gfile)
             grid_dset.set_auto_maskandscale(False)
 
-            # Append georeferencing
-            logger.info("Copy georeferencing information")
-            add_georeference(grid_dset, output_dset)
+        # Process dataset
+        run(input_dset, output_dset, read_csv(DEFAULT_PROTOCOL), grid_dset)
 
     finally:
         # Close datasets silently
@@ -169,7 +165,10 @@ def read_csv(txt):
     return [dict(zip(colnames, elm)) for elm in elements[1:]]
 
 
-def process(dset_in: nc.Dataset, dset_out: nc.Dataset, protocol: ProtocolType):
+def run(
+        dset_in: nc.Dataset, dset_out: nc.Dataset, protocol: ProtocolType,
+        dset_grid: nc.Dataset = None
+):
     """
     Converts data according to the given protocol
 
@@ -195,9 +194,12 @@ def process(dset_in: nc.Dataset, dset_out: nc.Dataset, protocol: ProtocolType):
 
     7.  Compression with zlib is applied to all variables with more than one dimension
 
+    8.  If supplied, add georeferencing information from grid dataset
+
     :param dset_in: Input dataset
     :param dset_out: Output dataset
     :param protocol: Conversion protocol
+    :param dset_grid: Grid dataset
     """
     # Copy attributes
     logger.info("Copy dataset attributes")
@@ -211,6 +213,11 @@ def process(dset_in: nc.Dataset, dset_out: nc.Dataset, protocol: ProtocolType):
     # Copy variables, coordinates and dimensions
     for p in protocol:
         copyvar(dset_in, dset_out, **p)
+
+    # Append georeferencing
+    if dset_grid:
+        logger.info("Copy georeferencing information")
+        add_georeference(dset_grid, dset_out)
 
 
 def copyvar(dset_src, dset_dst, varname, dtype=None, offset=None, scale=None, **kwargs):
@@ -320,6 +327,11 @@ def add_georeference(grid_dset, out_dset):
         if getattr(grid_dset.variables[varname], 'standard_name', '') in pvar_std_names:
             proj_vars.append(varname)
 
+    if len(proj_vars) < 2:
+        raise ValueError("Could not find projection coordinates in grid dataset")
+    elif len(proj_vars) > 2:
+        raise ValueError("More than two projection coordinates found")
+
     # Copy projection coordinate variables and grid mapping variable
     for varname in [grid_mapping_varname] + proj_vars:
         copyvar_verbatim(grid_dset.variables[varname], out_dset)
@@ -327,7 +339,7 @@ def add_georeference(grid_dset, out_dset):
     # Add grid mapping reference to all variables using projection coordinates
     for varname in out_dset.variables:
         v = out_dset.variables[varname]
-        if set.intersection(set(v.dimensions), set(proj_vars)):
+        if proj_vars[0] in v.dimensions and proj_vars[1] in v.dimensions:
             v.grid_mapping = grid_mapping_varname
 
 

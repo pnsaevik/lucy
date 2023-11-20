@@ -83,14 +83,31 @@ class Test_romsconv:
         with nc.Dataset(filename='dset_out.nc', mode='w', diskless=True) as dset_out:
             yield dset_out
 
+    @pytest.fixture(scope='function')
+    def dset_grid(self):
+        with nc.Dataset(filename='dset_grid.nc', mode='w', diskless=True) as dset_grid:
+
+            dset_grid.createDimension(dimname='x', size=2)
+            dset_grid.createDimension(dimname='y', size=3)
+
+            dset_grid.createVariable(varname='crs', datatype='i1', dimensions=())
+            dset_grid.createVariable(varname='x', datatype='i1', dimensions='x')
+            dset_grid.createVariable(varname='y', datatype='i1', dimensions='y')
+
+            dset_grid.variables['crs'].grid_mapping_name = 'polar_stereographic'
+            dset_grid.variables['x'].standard_name = 'projection_x_coordinate'
+            dset_grid.variables['y'].standard_name = 'projection_y_coordinate'
+
+            yield dset_grid
+
     def test_dataset_attributes_are_copied_verbatim(self, dset_in, dset_out):
         dset_in.setncattr(name="myatt", value="myval")
-        roms2nc4int2.process(dset_in, dset_out, protocol=[])
+        roms2nc4int2.run(dset_in, dset_out, protocol=[])
         assert dset_out.getncattr('myatt') == "myval"
 
     def test_history_attribute_is_appended_to(self, dset_in, dset_out):
         dset_in.setncattr(name="history", value="Created by ROMS")
-        roms2nc4int2.process(dset_in, dset_out, protocol=[])
+        roms2nc4int2.run(dset_in, dset_out, protocol=[])
 
         history_masked = re.sub(pattern="[0-9]", repl="0", string=dset_out.history)
         assert history_masked.startswith(
@@ -99,19 +116,19 @@ class Test_romsconv:
         )
 
     def test_institution_attribute_is_added(self, dset_in, dset_out):
-        roms2nc4int2.process(dset_in, dset_out, protocol=[])
+        roms2nc4int2.run(dset_in, dset_out, protocol=[])
         assert "institution" in dset_out.ncattrs()
         assert "history" in dset_out.ncattrs()
 
     def test_drops_variables_which_are_not_in_protocol(self, dset_in, dset_out):
         dset_in.createVariable(varname='myvar', datatype='i2')[:] = 0
-        roms2nc4int2.process(dset_in, dset_out, protocol=[])
+        roms2nc4int2.run(dset_in, dset_out, protocol=[])
         assert "myvar" not in dset_out.variables
 
     def test_keeps_variables_that_are_in_protocol(self, dset_in, dset_out):
         key = 'varname'  # type: roms2nc4int2.ProtocolKeyword
         dset_in.createVariable(varname='myvar', datatype='i2')[:] = 0
-        roms2nc4int2.process(dset_in, dset_out, protocol=[{key: 'myvar'}])
+        roms2nc4int2.run(dset_in, dset_out, protocol=[{key: 'myvar'}])
         assert "myvar" in dset_out.variables
 
     def test_variable_data_are_scaled_and_offsetted(self, dset_in, dset_out):
@@ -121,7 +138,7 @@ class Test_romsconv:
         dset_in.createVariable(varname='v', datatype='f4', dimensions='d')
         dset_in.variables['v'][:] = [.5, 1, 1.5, 2, 2.5]
 
-        roms2nc4int2.process(dset_in, dset_out, protocol=protocol)  # type: ignore
+        roms2nc4int2.run(dset_in, dset_out, protocol=protocol)  # type: ignore
 
         assert dset_out.variables['v'][:].tolist() == [3, 4, 5, 6, 7]
         assert dset_out.variables['v'].getncattr('scale_factor') == 0.5
@@ -130,7 +147,7 @@ class Test_romsconv:
     def test_variable_data_are_stored_using_specified_data_type(self, dset_in, dset_out):
         protocol = [dict(varname='v', dtype='i2')]
         dset_in.createVariable(varname='v', datatype='f4')[:] = 5.9
-        roms2nc4int2.process(dset_in, dset_out, protocol=protocol)  # type: ignore
+        roms2nc4int2.run(dset_in, dset_out, protocol=protocol)  # type: ignore
 
         assert dset_out.variables['v'][:].tolist() == 5
         assert dset_out.variables['v'].dtype == np.dtype('int16')
@@ -140,7 +157,7 @@ class Test_romsconv:
         dset_in.createDimension(dimname='ocean_time', size=2)
         dset_in.createDimension(dimname='d', size=3)
         dset_in.createVariable(varname='v', datatype='i2', dimensions=('ocean_time', 'd'))
-        roms2nc4int2.process(dset_in, dset_out, protocol=protocol)  # type: ignore
+        roms2nc4int2.run(dset_in, dset_out, protocol=protocol)  # type: ignore
 
         assert not dset_in.dimensions['ocean_time'].isunlimited()
         assert dset_out.dimensions['ocean_time'].isunlimited()
@@ -150,7 +167,7 @@ class Test_romsconv:
         protocol = [{key: 'myvar'}]
         v = dset_in.createVariable(varname='myvar', datatype='i2')
         v.setncattr('myattr', 'myval')
-        roms2nc4int2.process(dset_in, dset_out, protocol)
+        roms2nc4int2.run(dset_in, dset_out, protocol)
         assert dset_out.variables['myvar'].getncattr('myattr') == 'myval'
 
     def test_apply_zlib_compression_to_variables_with_more_than_one_dim(self, dset_in, dset_out):
@@ -159,7 +176,21 @@ class Test_romsconv:
         dset_in.createDimension(dimname='d2', size=3)
         dset_in.createVariable(varname='a', datatype='i2', dimensions=('d1', 'd2'))
         dset_in.createVariable(varname='b', datatype='i2', dimensions='d1')
-        roms2nc4int2.process(dset_in, dset_out, protocol=protocol)  # type: ignore
+        roms2nc4int2.run(dset_in, dset_out, protocol=protocol)  # type: ignore
 
         assert dset_out.variables['a'].filters()['zlib']
         assert not dset_out.variables['b'].filters()['zlib']
+
+    def test_adds_georeferencing_information_if_grid_file_is_supplied(self, dset_in, dset_out, dset_grid):
+        protocol = [dict(varname='a'), dict(varname='b')]
+        dset_in.createDimension(dimname='x', size=2)
+        dset_in.createDimension(dimname='y', size=3)
+        dset_in.createVariable(varname='a', datatype='i2', dimensions=('x', 'y'))
+        dset_in.createVariable(varname='b', datatype='i2', dimensions=())
+        roms2nc4int2.run(dset_in, dset_out, protocol, dset_grid)  # type: ignore
+
+        assert dset_out.variables['crs'].ncattrs() == dset_grid.variables['crs'].ncattrs()
+        assert dset_out.variables['x'].ncattrs() == dset_grid.variables['x'].ncattrs()
+        assert dset_out.variables['y'].ncattrs() == dset_grid.variables['y'].ncattrs()
+        assert dset_out.variables['a'].getncattr('grid_mapping') == 'crs'
+        assert 'grid_mapping' not in dset_out.variables['b'].ncattrs()
