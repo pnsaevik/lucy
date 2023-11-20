@@ -1,7 +1,9 @@
 name: Upload documentation
 
 on:
-  workflow_call: {}
+  workflow_call:
+    branches:
+      - "main"
 
 jobs:
   run_sphinx:
