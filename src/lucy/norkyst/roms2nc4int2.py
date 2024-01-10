@@ -46,8 +46,7 @@ temp        i2      10      0.001
 salt        i2      30      0.001
 ssflux      i2      0       0.00001
 w           i2      0       0.00001
-AKt         f4      0       1
-AKs         f4      0       1
+ln_AKs      i2      0       0.001
 Vtransform  i2
 Vstretching i2
 mask_rho    i1
@@ -84,8 +83,12 @@ FILL_VALUES = dict(
     f8=-1e+307,
 )
 
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
-ProtocolKeyword = typing.Literal["varname", "dtype", "offset", "scale"]
+ProtocolKeyword = Literal["varname", "dtype", "offset", "scale"]
 ProtocolType = typing.List[typing.Dict[ProtocolKeyword, typing.Union[float, str]]]
 
 
@@ -240,8 +243,14 @@ def run(
 
 
 def copyvar(dset_src, dset_dst, varname, dtype=None, offset=None, scale=None, **kwargs):
+    is_log_variable = False
+
     if varname not in dset_src.variables:
-        return None
+        if varname.startswith('ln_') and (dtype is not None) and (varname[3:] in dset_src.variables):
+            is_log_variable = True
+            varname = varname[3:]
+        else:
+            return None
 
     src = dset_src.variables[varname]
     src.set_auto_maskandscale(False)
@@ -266,9 +275,13 @@ def copyvar(dset_src, dset_dst, varname, dtype=None, offset=None, scale=None, **
         kwargs['zlib'] = True
 
     # Create variable
-    logger.info("Copy variable " + varname + str(src.shape))
+    if is_log_variable:
+        varname_out = 'ln_' + varname
+    else:
+        varname_out = varname
+    logger.info("Copy variable " + varname_out + str(src.shape))
     dst = dset_dst.createVariable(
-        varname, datatype=dtype or src.dtype, dimensions=src.dimensions, **kwargs)
+        varname_out, datatype=dtype or src.dtype, dimensions=src.dimensions, **kwargs)
     dst.set_auto_maskandscale(False)
 
     # Copy attributes
@@ -321,11 +334,13 @@ def copyvar(dset_src, dset_dst, varname, dtype=None, offset=None, scale=None, **
         for chunk in chunks:
             values = src[chunk]*scale_src + offset_src
             with np.errstate(all='ignore'):
+                if is_log_variable:
+                    values = np.log(values)
                 transformed_values = (values - offset_dst) / scale_dst
                 raw_values = transformed_values.astype(dtype)
             if raw_values.shape != () and fill_value is not None:
-                raw_values[raw_values < underflow] = fill_value
-                raw_values[raw_values > overflow] = fill_value
+                raw_values[transformed_values < underflow] = fill_value
+                raw_values[transformed_values > overflow] = fill_value
                 raw_values[is_invalid[chunk]] = invalid_value
             dst[chunk] = raw_values
 

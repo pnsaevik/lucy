@@ -5,9 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - yyyy-mm-dd
+## [1.1.0] - 2024-01-10
 
 ### Added
+- Possible to convert ROMS raw variables to log values when storing
 - Standardized schema for tables
 - Allow downloading farm data from the Fisheries Directorate
 - Script for converting raw ROMS files to NorKyst files
