@@ -158,7 +158,7 @@ def read_args(argv):
     # Interpret command line arguments
     ofile = argv[-1]
     ifile = argv[-2]
-    if len(argv) > 3:
+    if len(argv) >= 3:
         gfile = argv[-3]
     else:
         gfile = None
