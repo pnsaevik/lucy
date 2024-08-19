@@ -23,9 +23,6 @@ def create_token(client_id: str, client_secret: str):
     :return: The access token
     """
 
-    print(os.getenv('BARENTSWATCH_CLIENT_ID'))
-    print(os.getenv('BARENTSWATCH_CLIENT_SECRET'))
-
     response = requests.request(
         method="POST",
         url="https://id.barentswatch.no/connect/token",
@@ -37,8 +34,6 @@ def create_token(client_id: str, client_secret: str):
             'scope': 'api',
         },
     )
-
-    print(response.text)
 
     response.raise_for_status()
     response_dict = response.json()
