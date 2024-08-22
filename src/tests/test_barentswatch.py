@@ -1,6 +1,7 @@
 from lucy.data import barentswatch
 import os
 import responses
+import pytest
 
 
 CSV_FIXTURE = """Uke,År,Lokalitetsnummer,Lokalitetsnavn,Voksne hunnlus,Lus i bevegelige stadier,Fastsittende lus,Trolig uten fisk,Har telt lakselus,Kommunenummer,Kommune,Fylkesnummer,Fylke,Lat,Lon,Lusegrense uke,Over lusegrense uke,Sjøtemperatur,ProduksjonsområdeId,Produksjonsområde
@@ -9,6 +10,10 @@ CSV_FIXTURE = """Uke,År,Lokalitetsnummer,Lokalitetsnavn,Voksne hunnlus,Lus i be
 2,2020,13035,Sauaneset I,0.94,2.78,1.6,Nei,Ja,4625,AUSTEVOLL,46,Vestland,60.089085,5.267967,0.5,Ja,8.07,3,Karmøy til Sotra
 1,2020,13035,Sauaneset I,1.22,4.56,0.97,Nei,Ja,4625,AUSTEVOLL,46,Vestland,60.089085,5.267967,0.5,Ja,8.6,3,Karmøy til Sotra
 """
+
+
+username = os.getenv('BW_USERNAME')
+password = os.getenv('BW_PASSWORD')
 
 
 class Test_create_token:
@@ -65,3 +70,35 @@ class Test_lice_count:
             'temp',
             'År',
         }
+
+    @pytest.mark.skipif(
+        condition=username is None or password is None,
+        reason="Username and/or password for Kystverket is not set",
+    )
+    def test_actual_response(self):
+        barentswatch.create_token(username, password)
+        df = barentswatch.lice(2023)
+        assert len(df) > 0
+        assert list(df.columns) == [
+            'Uke',
+            'År',
+            'farmid',
+            'Lokalitetsnavn',
+            'naf',
+            'npa',
+            'nch',
+            'Trolig uten fisk',
+            'Har telt lakselus',
+            'Kommunenummer',
+            'Kommune',
+            'Fylkesnummer',
+            'Fylke',
+            'Lat',
+            'Lon',
+            'Lusegrense uke',
+            'Over lusegrense uke',
+            'temp',
+            'ProduksjonsområdeId',
+            'Produksjonsområde',
+            'date',
+        ]
