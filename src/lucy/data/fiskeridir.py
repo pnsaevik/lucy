@@ -130,7 +130,7 @@ def pages2dataframes(p: list) -> pd.DataFrame:
     return pd.merge(left=report_df, right=cage_df, on='referenceId', how='right')
 
 
-def biomass(year: int, user: str, passwd: str):
+def biomass(year: int, user: str, passwd: str, start=None, stop=None):
     """
     Return biomass data using the fiskdir API
 
@@ -139,10 +139,21 @@ def biomass(year: int, user: str, passwd: str):
     :param year: The year
     :param user: Username
     :param passwd: Password
+    :param start: If given, use this as the start date instead of 1st
+        January of the given year
+    :param stop: If given, use this as the stop date instead of 31st
+        December of the given year
     :return: A table of biomass data
     """
-    start = f'{year}-01-01'
-    stop = f'{year+1}-01-01'
+    if start:
+        start = np.datetime64(start, 'D').astype(str)
+    else:
+        start = f'{year - 1}-12-31'
+    if stop:
+        stop = np.datetime64(stop, 'D').astype(str)
+    else:
+        stop = f'{year + 1}-01-01'
+
     pages = paginated_request(url=get_url(start, stop), user=user, passwd=passwd)
     table = pages2dataframes(pages)
     return table

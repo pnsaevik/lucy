@@ -5,6 +5,11 @@ from lucy.data import fiskeridir
 import numpy as np
 import responses
 import json
+import os
+
+
+username = os.getenv('FDIR_USERNAME')
+password = os.getenv('FDIR_PASSWORD')
 
 
 CSV_TEST_DATA = """AKVAKULTURTILLATELSER PR. 23-06-2023 ;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -160,10 +165,29 @@ class Test_biomass:
     def test_returns_dataset(self):
         responses.add(
             responses.GET,
-            'https://fiskeridirektoratet-bio-api.hi.no/apis/nmdapi/fiskeridirektoratet-bio-api/v1/report?url=https://api.fiskeridir.no/bio-api/api/v1/reports?size=100%26start-time=2023-01-01T00:00:00Z%26end-time=2024-01-01T00:00:00Z%26page=0',
+            'https://fiskeridirektoratet-bio-api.hi.no/apis/nmdapi/'
+            'fiskeridirektoratet-bio-api/v1/report?'
+            'url=https://api.fiskeridir.no/bio-api/api/v1/reports?'
+            'size=100%26start-time=2022-12-31T00:00:00Z%26'
+            'end-time=2024-01-01T00:00:00Z%26page=0',
             body=FISKDIR_TEST_DATA,
         )
         df = fiskeridir.biomass(2023, "nmd", "")
+        assert len(df) > 0
+        assert list(df.columns) == [
+            'referenceId', 'reportReceipt', 'organization', 'reportTime', 'startTime',
+            'endTime', 'siteNr', 'siteName', 'sourceSystem', 'productionUnitForeignId',
+            'specieCode', 'numFish', 'avgWeight', 'weightUnit'
+        ]
+
+    @pytest.mark.skipif(
+        condition=username is None or password is None,
+        reason="Username and/or password for Kystverket is not set",
+    )
+    def test_actual_response(self):
+        df = fiskeridir.biomass(
+            2023, username, password, '2022-12-31', '2023-02-01')
+        assert len(df) > 0
         assert list(df.columns) == [
             'referenceId', 'reportReceipt', 'organization', 'reportTime', 'startTime',
             'endTime', 'siteNr', 'siteName', 'sourceSystem', 'productionUnitForeignId',
@@ -181,6 +205,11 @@ class Test_active_farms:
         )
 
         df = fiskeridir.active_farms()
+        assert list(df.columns) == ['farmid', 'name', 'lon', 'lat']
+
+    def test_actual_response(self):
+        df = fiskeridir.active_farms()
+        assert len(df) > 0
         assert list(df.columns) == ['farmid', 'name', 'lon', 'lat']
 
 
