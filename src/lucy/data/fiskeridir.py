@@ -106,6 +106,7 @@ def pages2dataframes(p: list) -> pd.DataFrame:
             for k in ['referenceId', 'reportReceipt']:
                 report_data[k] = report[k]
             report_data['organization'] = report['reportee']['organization']
+            report_data['mainOperator'] = report['mainOperator']
             for k in ['reportTime', 'startTime', 'endTime']:
                 report_data[k] = report['period'][k]
             for k in ['siteNr', 'siteName', 'sourceSystem']:
@@ -116,7 +117,7 @@ def pages2dataframes(p: list) -> pd.DataFrame:
                 for species in cage['species']:
                     for cohort in species['cohorts']:
                         cage_data = dict(
-                            referenceId=report['referenceId'],
+                            reportReceipt=report['reportReceipt'],
                             productionUnitForeignId=cage['productionUnitForeignId'],
                             specieCode=species['specieCode'],
                             numFish=cohort['sumProduction']['inventory'],
@@ -127,7 +128,8 @@ def pages2dataframes(p: list) -> pd.DataFrame:
 
     report_df = pd.DataFrame(report_dfs)
     cage_df = pd.DataFrame(cage_dfs)
-    return pd.merge(left=report_df, right=cage_df, on='referenceId', how='right')
+    assert len(np.unique(report_df['reportReceipt'])) == len(report_df)
+    return pd.merge(left=report_df, right=cage_df, on='reportReceipt', how='right')
 
 
 def biomass(year: int, user: str, passwd: str, start=None, stop=None):

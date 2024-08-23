@@ -72,6 +72,7 @@ FISKDIR_TEST_DATA = """
  {"referenceId":"38957-1682892000-930367931-930367931",
   "reportReceipt":"AR557485954",
   "reportee":{"organization":"930367931"},
+  "mainOperator":"930367931",
   "period":{"reportTime":"2023-06-21T12:48:14Z","startTime":"2023-04-30T22:00:00Z","endTime":"2023-05-31T22:00:00Z","resolution":"MONTH","resolutionValue":"MÅNED","registeredTime":"2023-06-21T12:48:14Z"},
   "site":{"siteNr":38957,"siteName":"Låderskjera","sourceSystem":"AKVA group Fishtalk"},
   "fallowing":{"startTime":"2023-06-14T02:00:00Z","endTime":"9999-12-30T00:00:00Z","productionMovedToSiteNr":null},
@@ -175,9 +176,10 @@ class Test_biomass:
         df = fiskeridir.biomass(2023, "nmd", "")
         assert len(df) > 0
         assert list(df.columns) == [
-            'referenceId', 'reportReceipt', 'organization', 'reportTime', 'startTime',
-            'endTime', 'siteNr', 'siteName', 'sourceSystem', 'productionUnitForeignId',
-            'specieCode', 'numFish', 'avgWeight', 'weightUnit'
+            'referenceId', 'reportReceipt', 'organization', 'mainOperator',
+            'reportTime', 'startTime', 'endTime', 'siteNr', 'siteName',
+            'sourceSystem', 'productionUnitForeignId', 'specieCode', 'numFish',
+            'avgWeight', 'weightUnit'
         ]
 
     @pytest.mark.skipif(
@@ -189,9 +191,10 @@ class Test_biomass:
             2023, username, password, '2022-12-31', '2023-02-01')
         assert len(df) > 0
         assert list(df.columns) == [
-            'referenceId', 'reportReceipt', 'organization', 'reportTime', 'startTime',
-            'endTime', 'siteNr', 'siteName', 'sourceSystem', 'productionUnitForeignId',
-            'specieCode', 'numFish', 'avgWeight', 'weightUnit'
+            'referenceId', 'reportReceipt', 'organization', 'mainOperator',
+            'reportTime', 'startTime', 'endTime', 'siteNr', 'siteName',
+            'sourceSystem', 'productionUnitForeignId', 'specieCode', 'numFish',
+            'avgWeight', 'weightUnit'
         ]
 
 
