@@ -63,6 +63,8 @@ class Test_open_location:
 
         df = df.reset_index()
         df = df[varnames]
+        for varname in ['depth', 'u', 'v', 'salt', 'temp', 'dens']:
+            df[varname] = df[varname].values.astype('f8').round(2)
         txt = df.to_csv(index=False, float_format="%.02f", lineterminator='\n')
 
         fname = FIXTURES_DIR / 'profile.csv'
