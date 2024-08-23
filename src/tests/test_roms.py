@@ -52,7 +52,7 @@ class Test_compute_azimuthal_vel:
 
 
 class Test_open_location:
-    @pytest.mark.skip(reason='Fails on CI server')
+    @pytest.mark.skip(reason='Fails on CI server, too restrictive')
     def test_correct_profile_data(self):
         dset = roms.load_location(FORCING_glob, lat=59.03, lon=5.68, az=0)
         varnames = ['time', 'depth', 'u', 'v', 'salt', 'temp', 'dens']
