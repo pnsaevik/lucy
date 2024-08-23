@@ -182,7 +182,7 @@ class Test_biomass:
 
     @pytest.mark.skipif(
         condition=username is None or password is None,
-        reason="Username and/or password for Kystverket is not set",
+        reason="Username and/or password for Fiskeridirektoratet is not set",
     )
     def test_actual_response(self):
         df = fiskeridir.biomass(
@@ -207,6 +207,10 @@ class Test_active_farms:
         df = fiskeridir.active_farms()
         assert list(df.columns) == ['farmid', 'name', 'lon', 'lat']
 
+    @pytest.mark.skipif(
+        condition=username is None or password is None,
+        reason="Username and/or password for Fiskeridirektoratet is not set",
+    )
     def test_actual_response(self):
         df = fiskeridir.active_farms()
         assert len(df) > 0
