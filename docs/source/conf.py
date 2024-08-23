@@ -67,7 +67,6 @@ extensions = [
 ]
 
 nitpicky = True
-nitpick_ignore = [('py:class', 'type')]
 html_css_files = [
     'css/custom.css',
 ]
