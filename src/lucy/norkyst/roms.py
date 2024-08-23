@@ -59,6 +59,11 @@ def load_location(file, lat, lon, az) -> xr.Dataset:
             logger.info(f'Horizontal interpolation')
             dset = dset[['u', 'v', 'temp', 'salt', 'angle']]
             dset = select_xy(dset, x, y)
+            dset['salt'] = xr.DataArray(
+                data=dset['salt'].values.round(4).astype('f4'),
+                dims=dset['salt'].dims,
+                attrs=dset['salt'].attrs,
+            )
 
             logger.info(f'Rotate velocity vectors, compute density')
             u = compute_azimuthal_vel(dset, az * (np.pi / 180))
