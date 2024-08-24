@@ -10,8 +10,7 @@ _AIS_CREDENTIALS = dict()
 
 
 def ais(user: str, passwd: str, mmsi: int | list[int],
-        start: datetime.datetime | str,
-        stop: datetime.datetime | str):
+        start, stop):
     """
     Retrieve AIS data from Kystdatahuset
 
