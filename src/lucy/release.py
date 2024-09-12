@@ -55,9 +55,14 @@ def create_licebiomass(df_biomass, df_lice):
     # Sort by fish farm ID and date
     df6 = df9.sort_values(['siteNr', 'datestr'])
 
+    # Compute average weight
+    weight = df6['weight'].values
+    num_fish = df6['numFish'].values
+    avg_weight = np.ma.divide(weight, num_fish).filled(0)
+
     # Prepare text file format
     df6['separator'] = '-'
-    df6['avgWeight'] = np.round(df6['weight'].values / df6['numFish'].values, 4)
+    df6['avgWeight'] = np.round(avg_weight, 4)
     df6['year'] = df6['datestr'].str.slice(0, 4)
     df6['month'] = df6['datestr'].str.slice(5, 7)
     df6['day'] = df6['datestr'].str.slice(8, 10)
@@ -122,6 +127,8 @@ def make_licebiomass(year, outfile, bw_user=None, bw_pass=None, fd_user=None,
         fd_user = os.getenv('FDIR_USERNAME')
     if not fd_pass:
         fd_pass = os.getenv('FDIR_PASSWORD')
+
+    year = int(year)
 
     logger.info('Download lice data')
     lucy.data.barentswatch.create_token(bw_user, bw_pass)
