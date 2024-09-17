@@ -1,3 +1,4 @@
 /docs/build/
 /docs/source/_autosummary/
+src/*/*/__pycache__/
 src/*/__pycache__/
